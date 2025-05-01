@@ -1,0 +1,23 @@
+# Google Cloud Project Configuration
+project_id = "your-project-id"
+terraform_sa = "terraform-admin@your-project-id.iam.gserviceaccount.com"
+region = "us-central1"
+
+# Registry settings - DO NOT CHANGE
+registry_project = "sync-to-cloud-registry"
+registry_region = "us-central1"
+repository_name = "sync-to-cloud-app"
+
+# Image names - DO NOT CHANGE
+api_image_name = "sync-to-cloud-api"
+ui_image_name = "sync-to-cloud-ui"
+worker_image_name = "sync-to-cloud-worker"
+
+# Domain-wide delegation
+# Leave empty if not using domain-wide delegation
+api_user_email = "drive-transfer-service@yourdomain.com"
+
+# BigQuery Configuration
+bigquery_project_id = "your-project-id"
+bigquery_dataset = "drive_inventory_report"
+bigquery_table = "inventory"

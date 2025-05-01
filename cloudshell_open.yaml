@@ -1,0 +1,16 @@
+title: Sync to Cloud Deployment
+subtitle: Deploy Sync to Cloud to your Google Cloud Project
+tagline: By Google & Automate Army
+repoUrl: https://github.com/automatearmy/sync-to-cloud-deploy
+
+steps:
+  - name: Read prerequisites
+    command: cat PREREQUISITES.md
+    highlight: true
+    showMessage: true
+
+  - name: Make the deploy script executable
+    command: chmod +x deploy.sh
+
+  - name: Launch the deployment tutorial
+    command: cloudshell launch-tutorial cloudshell_tutorial.md
