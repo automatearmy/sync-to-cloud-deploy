@@ -80,7 +80,6 @@ ui_image_name = "sync-to-cloud-ui"
 worker_image_name = "sync-to-cloud-worker"
 
 # Domain-wide delegation
-# Leave empty if not using domain-wide delegation
 api_user_email = "${API_USER_EMAIL}"
 
 # BigQuery Configuration
