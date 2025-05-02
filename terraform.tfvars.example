@@ -2,6 +2,7 @@
 project_id = "your-project-id"
 terraform_sa = "terraform-admin@your-project-id.iam.gserviceaccount.com"
 region = "us-central1"
+environment = "production"
 
 # Registry settings - DO NOT CHANGE
 registry_project = "sync-to-cloud-registry"

@@ -45,6 +45,12 @@ log_success "API User Email set to: ${COLOR_BOLD}${API_USER_EMAIL}${COLOR_RESET}
 log_info "You will need to configure domain-wide delegation for this service account in Google Workspace."
 log_info "Instructions: https://developers.google.com/admin-sdk/directory/v1/guides/delegation"
 
+# Ask for environment name
+log_step "Environment Configuration"
+log_info "Specify the deployment environment name."
+ENVIRONMENT=$(ask_with_default "Enter environment name" "production" "Common environments: development, staging, production")
+log_success "Environment set to: ${COLOR_BOLD}${ENVIRONMENT}${COLOR_RESET}"
+
 # Ask for BigQuery Configuration
 log_step "BigQuery Configuration"
 log_info "Configure BigQuery for Drive inventory reports."
@@ -69,6 +75,7 @@ cat > terraform.tfvars <<EOL
 project_id = "${PROJECT_ID}"
 terraform_sa = "${TF_SERVICE_ACCOUNT}"
 region = "${REGION}"
+environment = "${ENVIRONMENT}"
 
 # Registry settings - DO NOT CHANGE
 registry_project = "${REGISTRY_PROJECT_ID}"
