@@ -48,13 +48,16 @@ ask_required() {
   local error_msg="${2:-This field is required}"
   local input=""
   
+  # Use stderr for all messages
   while [[ -z "$input" ]]; do
-    read -p "$prompt" input
+    echo -e "${COLOR_YELLOW}${prompt}${COLOR_RESET}" >&2
+    read input
     if [[ -z "$input" ]]; then
-      log_error "$error_msg"
+      echo -e "${COLOR_RED}[ERROR]${COLOR_RESET} $error_msg" >&2
     fi
   done
   
+  # Output only the clean input value to stdout
   echo "$input"
 }
 
@@ -66,15 +69,18 @@ ask_with_default() {
   local description="${3:-}"
   local input=""
   
+  # Use stderr for all messages
   if [[ -n "$description" ]]; then
-    log_info "$description"
+    echo -e "${COLOR_YELLOW}[INFO]${COLOR_RESET} $description" >&2
   fi
   
-  read -p "$prompt (default: $default): " input
+  echo -e "${COLOR_YELLOW}${prompt} (default: $default): ${COLOR_RESET}" >&2
+  read input
   if [[ -z "$input" ]]; then
     input="$default"
   fi
   
+  # Output only the clean input value to stdout
   echo "$input"
 }
 
