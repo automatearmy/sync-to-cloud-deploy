@@ -3,9 +3,10 @@
 # Exit on error
 set -e
 
-# Source common utilities
+# Source common utilities and environment variables
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "${SCRIPT_DIR}/utils.sh"
+source "${SCRIPT_DIR}/env.sh"
 
 # Display banner
 display_banner "Terraform Image Puller" "Pulling the Terraform Docker image from artifact registry"
@@ -47,21 +48,24 @@ if [[ -z "$TOKEN" ]]; then
   exit 1
 fi
 
-# Configure Docker to use the service account credentials
-log_info "Configuring Docker authentication..."
-echo "$TOKEN" | docker login -u oauth2accesstoken --password-stdin https://us-central1-docker.pkg.dev
+# Configure Docker to use the service account credentials via isolated config
+log_info "Configuring Docker authentication with temporary config..."
+export DOCKER_CONFIG=$(mktemp -d)
+echo "$TOKEN" | docker --config "$DOCKER_CONFIG" login -u oauth2accesstoken --password-stdin https://us-central1-docker.pkg.dev
 
 # Pull the Terraform Docker image
-TERRAFORM_IMAGE="us-central1-docker.pkg.dev/sync-to-cloud-registry/sync-to-cloud-app/sync-to-cloud-terraform:latest"
 log_info "Image: ${COLOR_BOLD}${TERRAFORM_IMAGE}${COLOR_RESET}"
 
-if ! docker pull "${TERRAFORM_IMAGE}"; then
+if ! docker --config "$DOCKER_CONFIG" pull "${TERRAFORM_IMAGE}"; then
   log_error "Failed to pull the Terraform Docker image."
   log_info "Please confirm with the Sync to Cloud team that your project (${PROJECT_ID}) has access to the artifact registry."
+  rm -rf "$DOCKER_CONFIG"
   exit 1
 fi
 
-# Save the image name to a file for later use
-echo "export TERRAFORM_IMAGE=${TERRAFORM_IMAGE}" > terraform_image_env.sh
-log_success "Terraform Docker image pulled successfully and saved to terraform_image_env.sh"
+# Clean up Docker config
+rm -rf "$DOCKER_CONFIG"
+
+
+log_success "Terraform Docker image pulled successfully"
 log_info "You can now proceed to run Terraform commands using the run_terraform.sh script."

@@ -3,9 +3,10 @@
 # Exit on error
 set -e
 
-# Source common utilities
+# Source common utilities and environment variables
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "${SCRIPT_DIR}/utils.sh"
+source "${SCRIPT_DIR}/env.sh"
 
 # Display banner
 display_banner "Terraform Configuration Generator" "Creating terraform.tfvars for Google Sync to Cloud deployment"
@@ -70,14 +71,14 @@ terraform_sa = "${TF_SERVICE_ACCOUNT}"
 region = "${REGION}"
 
 # Registry settings - DO NOT CHANGE
-registry_project = "sync-to-cloud-registry"
-registry_region = "us-central1"
-repository_name = "sync-to-cloud-app"
+registry_project = "${REGISTRY_PROJECT_ID}"
+registry_region = "${REGISTRY_REGION}"
+repository_name = "${REGISTRY_REPOSITORY_NAME}"
 
 # Image names - DO NOT CHANGE
-api_image_name = "sync-to-cloud-api"
-ui_image_name = "sync-to-cloud-ui"
-worker_image_name = "sync-to-cloud-worker"
+api_image_name = "${API_IMAGE_NAME}"
+ui_image_name = "${UI_IMAGE_NAME}"
+worker_image_name = "${WORKER_IMAGE_NAME}"
 
 # Domain-wide delegation
 api_user_email = "${API_USER_EMAIL}"

@@ -3,9 +3,10 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
-# Source common utilities
+# Source common utilities and environment variables
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "${SCRIPT_DIR}/utils.sh"
+source "${SCRIPT_DIR}/env.sh"
 
 # Display banner
 display_banner "Project Setup Verification" "Verifying your Google Cloud project setup for Sync to Cloud"

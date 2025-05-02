@@ -3,9 +3,10 @@
 # Exit on error
 set -e
 
-# Source common utilities
+# Source common utilities and environment variables
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "${SCRIPT_DIR}/utils.sh"
+source "${SCRIPT_DIR}/env.sh"
 
 # Display banner
 display_banner "Terraform Infrastructure Setup" "Setting up service account and state bucket for Terraform"
@@ -22,8 +23,6 @@ log_info "Using project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
 # ----- PART 1: Create Terraform Service Account -----
 log_step "Creating Terraform Service Account"
 
-# Define service account name
-SA_NAME="terraform-admin"
 SA_DISPLAY_NAME="Terraform Admin Service Account"
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 

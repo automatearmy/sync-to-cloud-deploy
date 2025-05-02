@@ -3,9 +3,10 @@
 # Exit on error
 set -e
 
-# Source common utilities
+# Source common utilities and environment variables
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "${SCRIPT_DIR}/utils.sh"
+source "${SCRIPT_DIR}/env.sh"
 
 # Display banner
 display_banner "OAuth Credentials Manager" "Storing OAuth client credentials for Google Sync to Cloud"
@@ -28,8 +29,8 @@ log_info "UI Domain: ${COLOR_BOLD}${UI_DOMAIN}${COLOR_RESET}"
 log_step "API OAuth Client (Desktop App)"
 
 # Check if secrets exist
-API_CLIENT_ID_EXISTS=$(gcloud secrets describe sync-to-cloud-api-client-id --project="$PROJECT_ID" 2>/dev/null || echo "")
-API_CLIENT_SECRET_EXISTS=$(gcloud secrets describe sync-to-cloud-api-client-secret --project="$PROJECT_ID" 2>/dev/null || echo "")
+API_CLIENT_ID_EXISTS=$(gcloud secrets describe "$API_CLIENT_ID_SECRET" --project="$PROJECT_ID" 2>/dev/null || echo "")
+API_CLIENT_SECRET_EXISTS=$(gcloud secrets describe "$API_CLIENT_SECRET_SECRET" --project="$PROJECT_ID" 2>/dev/null || echo "")
 
 if [[ -n "$API_CLIENT_ID_EXISTS" && -n "$API_CLIENT_SECRET_EXISTS" ]]; then
   log_success "API OAuth client secrets already exist in Secret Manager."
@@ -45,23 +46,23 @@ else
   
   # Create secrets if they don't exist
   if [[ -z "$API_CLIENT_ID_EXISTS" ]]; then
-    gcloud secrets create sync-to-cloud-api-client-id \
+    gcloud secrets create "$API_CLIENT_ID_SECRET" \
       --replication-policy="automatic" \
       --project="$PROJECT_ID"
   fi
   
   if [[ -z "$API_CLIENT_SECRET_EXISTS" ]]; then
-    gcloud secrets create sync-to-cloud-api-client-secret \
+    gcloud secrets create "$API_CLIENT_SECRET_SECRET" \
       --replication-policy="automatic" \
       --project="$PROJECT_ID"
   fi
   
   # Update secret values
-  echo -n "$API_CLIENT_ID" | gcloud secrets versions add sync-to-cloud-api-client-id \
+  echo -n "$API_CLIENT_ID" | gcloud secrets versions add "$API_CLIENT_ID_SECRET" \
     --data-file=- \
     --project="$PROJECT_ID"
   
-  echo -n "$API_CLIENT_SECRET" | gcloud secrets versions add sync-to-cloud-api-client-secret \
+  echo -n "$API_CLIENT_SECRET" | gcloud secrets versions add "$API_CLIENT_SECRET_SECRET" \
     --data-file=- \
     --project="$PROJECT_ID"
   
@@ -72,8 +73,8 @@ fi
 log_step "UI OAuth Client (Web App)"
 
 # Check if secrets exist
-UI_CLIENT_ID_EXISTS=$(gcloud secrets describe sync-to-cloud-ui-client-id --project="$PROJECT_ID" 2>/dev/null || echo "")
-UI_CLIENT_SECRET_EXISTS=$(gcloud secrets describe sync-to-cloud-ui-client-secret --project="$PROJECT_ID" 2>/dev/null || echo "")
+UI_CLIENT_ID_EXISTS=$(gcloud secrets describe "$UI_CLIENT_ID_SECRET" --project="$PROJECT_ID" 2>/dev/null || echo "")
+UI_CLIENT_SECRET_EXISTS=$(gcloud secrets describe "$UI_CLIENT_SECRET_SECRET" --project="$PROJECT_ID" 2>/dev/null || echo "")
 
 if [[ -n "$UI_CLIENT_ID_EXISTS" && -n "$UI_CLIENT_SECRET_EXISTS" ]]; then
   log_success "UI OAuth client secrets already exist in Secret Manager."
@@ -89,23 +90,23 @@ else
   
   # Create secrets if they don't exist
   if [[ -z "$UI_CLIENT_ID_EXISTS" ]]; then
-    gcloud secrets create sync-to-cloud-ui-client-id \
+    gcloud secrets create "$UI_CLIENT_ID_SECRET" \
       --replication-policy="automatic" \
       --project="$PROJECT_ID"
   fi
   
   if [[ -z "$UI_CLIENT_SECRET_EXISTS" ]]; then
-    gcloud secrets create sync-to-cloud-ui-client-secret \
+    gcloud secrets create "$UI_CLIENT_SECRET_SECRET" \
       --replication-policy="automatic" \
       --project="$PROJECT_ID"
   fi
   
   # Update secret values
-  echo -n "$UI_CLIENT_ID" | gcloud secrets versions add sync-to-cloud-ui-client-id \
+  echo -n "$UI_CLIENT_ID" | gcloud secrets versions add "$UI_CLIENT_ID_SECRET" \
     --data-file=- \
     --project="$PROJECT_ID"
   
-  echo -n "$UI_CLIENT_SECRET" | gcloud secrets versions add sync-to-cloud-ui-client-secret \
+  echo -n "$UI_CLIENT_SECRET" | gcloud secrets versions add "$UI_CLIENT_SECRET_SECRET" \
     --data-file=- \
     --project="$PROJECT_ID"
   

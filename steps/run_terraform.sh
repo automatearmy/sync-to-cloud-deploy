@@ -3,9 +3,10 @@
 # Exit on error
 set -e
 
-# Source common utilities
+# Source common utilities and environment variables
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "${SCRIPT_DIR}/utils.sh"
+source "${SCRIPT_DIR}/env.sh"
 
 # Display banner
 display_banner "Terraform Deployment Runner" "Running Terraform to deploy Google Sync to Cloud"
@@ -28,14 +29,8 @@ else
   log_info "Service account environment file not found, using default: ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
 fi
 
-# Get terraform image
-TERRAFORM_IMAGE=""
-if [[ -f "terraform_image_env.sh" ]]; then
-  source terraform_image_env.sh
-else
-  log_error "Terraform image file not found. Please run steps/pull_terraform_image.sh first."
-  exit 1
-fi
+# Use terraform image from env.sh
+log_info "Using Terraform image: ${COLOR_BOLD}${TERRAFORM_IMAGE}${COLOR_RESET}"
 
 # Get state bucket name
 TF_STATE_BUCKET=""
