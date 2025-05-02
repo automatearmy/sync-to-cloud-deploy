@@ -8,23 +8,25 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "${SCRIPT_DIR}/utils.sh"
 
 # Display banner
-display_banner "Terraform Service Account Creator" "Creating service account for Terraform deployment"
+display_banner "Terraform Infrastructure Setup" "Setting up service account and state bucket for Terraform"
 
 # Check required commands
 check_command "gcloud"
+check_command "gsutil"
 check_command "jq"
 
 # Get project details from argument or from gcloud config
 PROJECT_ID=$(get_project_id "$1")
 log_info "Using project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
 
+# ----- PART 1: Create Terraform Service Account -----
+log_step "Creating Terraform Service Account"
+
 # Define service account name
 SA_NAME="terraform-admin"
 SA_DISPLAY_NAME="Terraform Admin Service Account"
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 
-log_step "Creating Terraform Service Account"
-log_info "Project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
 log_info "Service Account Name: ${COLOR_BOLD}${SA_NAME}${COLOR_RESET}"
 log_info "Service Account Email: ${COLOR_BOLD}${SA_EMAIL}${COLOR_RESET}"
 
@@ -75,9 +77,51 @@ fi
 echo "export TF_SERVICE_ACCOUNT_EMAIL=${SA_EMAIL}" > tf_sa_env.sh
 log_info "Service account email saved to tf_sa_env.sh for later use."
 
+# ----- PART 2: Create Terraform State Bucket -----
+log_step "Creating GCS bucket for Terraform state"
+
+# Define GCS bucket location
+GCS_LOCATION="US"
+
+# Generate bucket name
+BUCKET_NAME="terraform-state-${PROJECT_ID}"
+
+log_info "Bucket Name: ${COLOR_BOLD}${BUCKET_NAME}${COLOR_RESET}"
+log_info "Location: ${COLOR_BOLD}${GCS_LOCATION}${COLOR_RESET}"
+
+# Check if bucket already exists
+if gsutil ls -b "gs://${BUCKET_NAME}" &>/dev/null; then
+  log_success "Bucket 'gs://${BUCKET_NAME}' already exists."
+  
+  # Ensure versioning is enabled
+  log_info "Ensuring versioning is enabled on the existing bucket..."
+  if gsutil versioning get "gs://${BUCKET_NAME}" | grep -q "Enabled"; then
+    log_success "Versioning is already enabled on the bucket."
+  else
+    log_info "Enabling versioning on the bucket..."
+    gsutil versioning set on "gs://${BUCKET_NAME}"
+    log_success "Versioning enabled on the bucket."
+  fi
+else
+  log_info "Creating new GCS bucket 'gs://${BUCKET_NAME}'..."
+  
+  # Create the bucket
+  gsutil mb -p "${PROJECT_ID}" -l "${GCS_LOCATION}" "gs://${BUCKET_NAME}"
+  log_success "Bucket 'gs://${BUCKET_NAME}' created successfully."
+  
+  # Enable versioning
+  log_info "Enabling versioning on the bucket..."
+  gsutil versioning set on "gs://${BUCKET_NAME}"
+  log_success "Versioning enabled on the bucket."
+fi
+
+# Save bucket name to a file for later use
+echo "export TF_STATE_BUCKET=${BUCKET_NAME}" >> tf_sa_env.sh
+log_info "Bucket name appended to tf_sa_env.sh for later use."
+
 # Final message
-log_step "Terraform Service Account setup completed!"
-log_success "Service account '$SA_EMAIL' has been created with Owner role."
-log_info "User '$USER_EMAIL' can now impersonate this service account."
-log_info "You can impersonate the service account using:"
-log_info "gcloud config set auth/impersonate_service_account $SA_EMAIL"
+log_step "Terraform Infrastructure Setup Completed!"
+display_success "Terraform service account and state bucket are ready"
+log_info "Service Account: ${COLOR_BOLD}${SA_EMAIL}${COLOR_RESET}"
+log_info "State Bucket: ${COLOR_BOLD}gs://${BUCKET_NAME}${COLOR_RESET}"
+log_info "You can now proceed to the next step of the deployment process."

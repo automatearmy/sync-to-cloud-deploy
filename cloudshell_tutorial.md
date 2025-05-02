@@ -31,22 +31,22 @@ Let's start by selecting the Google Cloud project where you'll deploy Google Syn
 
 Your selected project is: **<walkthrough-project-id/>**
 
-## Project Configuration
+## Project and Script Setup
 
-Let's configure your selected project and make sure everything is set up correctly:
+Let's configure your selected project and prepare all the scripts for this tutorial:
 
 ```sh
-gcloud config set project <walkthrough-project-id/>
+gcloud config set project <walkthrough-project-id/> && chmod +x steps/*.sh
 ```
 
-The command above sets your current project to the one you selected.
+This sets your current project and makes all deployment scripts executable.
 
 ## Project Permissions Check
 
 Now, let's make sure you have the necessary permissions on this project and enable required APIs:
 
 ```sh
-mkdir -p steps && ./steps/check_project_setup.sh
+./steps/check_project_setup.sh
 ```
 
 This script will:
@@ -81,57 +81,76 @@ The OAuth consent screen must be configured before creating OAuth clients.
 
 ## Create OAuth Clients
 
-Now that you've configured the OAuth consent screen, let's create the OAuth clients using our automated script:
+Now that you've configured the OAuth consent screen, you need to create two OAuth clients and then store their credentials:
 
-```sh 
-./steps/create_oauth_credentials.sh
-````
+### 1. Create API OAuth Client (Desktop App)
 
-This script will:
+1. Go to [Credentials](https://console.cloud.google.com/apis/credentials?project=<walkthrough-project-id/>) in the Google Cloud Console
+2. Click "Create Credentials" > "OAuth client ID"
+3. Select "Desktop App" as the application type
+4. Name: "Sync to Cloud API - Admin Transfers"
+5. Click "Create"
+6. **Copy and save the Client ID and Client Secret** - you'll need them in the next step
 
-1. Verify that the OAuth consent screen is configured
-2. Create two OAuth clients (one for the API and one for the UI)
-3. Store the client IDs and secrets in Secret Manager for secure access
+### 2. Create UI OAuth Client (Web App) 
 
-<walkthrough-footnote>
-The script automatically creates OAuth clients and stores credentials in Secret Manager, keeping them secure until needed by the deployment process.
-</walkthrough-footnote>
+1. Go to [Credentials](https://console.cloud.google.com/apis/credentials?project=<walkthrough-project-id/>) again
+2. Click "Create Credentials" > "OAuth client ID"
+3. Select "Web Application" as the application type
+4. Name: "Sync to Cloud UI - IAP/Auth"
+5. Add the following Authorized JavaScript origins:
+   * `http://localhost`
+   * `http://localhost:5001`
+   * `https://sync-to-cloud-ui-PROJECT_NUMBER.us-central1.run.app`
+     (Replace PROJECT_NUMBER with your project number from this command:
+     ```sh
+     gcloud projects describe <walkthrough-project-id/> --format="value(projectNumber)"
+     ```
+     )
+6. Add the following Authorized redirect URIs:
+   * `https://sync-to-cloud-ui-PROJECT_NUMBER.us-central1.run.app`
+   * (Use the same PROJECT_NUMBER as above)
+7. Click "Create"
+8. **Copy and save the Client ID and Client Secret** - you'll need them in the next step
+9. **Important**: After creation, edit this client and add this additional redirect URI:
+   * `https://iap.googleapis.com/v1/oauth/clientIds/CLIENT_ID:handleRedirect`
+   * (Replace CLIENT_ID with the client ID you just received)
 
-## Create Terraform State Bucket
+### 3. Store the OAuth credentials
 
-Terraform needs a Google Cloud Storage bucket to store its state files. This enables state tracking and collaborative work on your infrastructure. Run the following command to create this bucket:
+Now, run the script to securely store your OAuth credentials in Secret Manager:
 
 ```sh
-./steps/create_tf_state_bucket.sh <walkthrough-project-id/>
+./steps/create_oauth_credentials.sh <walkthrough-project-id/>
+```
+
+The script will:
+1. Prompt you to enter the Client ID and Client Secret for each OAuth client you created
+2. Store these credentials securely in Secret Manager
+3. Make them available for the deployment process
+
+<walkthrough-footnote>
+The OAuth clients you created will allow Google Sync to Cloud to securely authenticate with Google APIs and services. Keep your client secrets secure and do not share them.
+</walkthrough-footnote>
+
+## Setup Terraform Infrastructure
+
+Now, let's set up the Terraform infrastructure needed for deployment. This includes creating a service account with the necessary permissions and a Cloud Storage bucket to store Terraform's state files.
+
+```sh
+./steps/setup_terraform_infra.sh <walkthrough-project-id/>
 ```
 
 This script will:
 
-1. Create a Cloud Storage bucket named `terraform-state-<project-id>`
-2. Enable versioning on the bucket for state file history
-3. Save the bucket name for later use in the deployment process
+1. Create a service account named `terraform-admin` with Owner permissions
+2. Ensure you have permission to impersonate this service account
+3. Create a Cloud Storage bucket named `terraform-state-<walkthrough-project-id/>`
+4. Enable versioning on the bucket for state file history
+5. Save the configuration for later use in the deployment process
 
 <walkthrough-footnote>
-The Terraform state bucket is crucial for maintaining consistent deployments. It tracks what resources have been created and their current state, allowing Terraform to properly manage infrastructure changes.
-</walkthrough-footnote>
-
-## Create Terraform Service Account
-
-Next, we'll create a service account that Terraform will use to create and manage resources:
-
-```sh
-./steps/create_terraform_sa.sh <walkthrough-project-id/>
-```
-
-This script will:
-
-1. Create a service account named `terraform-admin`
-2. Grant it the Owner role on your project
-3. Ensure you have permission to impersonate this service account
-4. Save the service account email for later use
-
-<walkthrough-footnote>
-The Terraform service account has elevated permissions to create all required resources. Your user account is granted permission to impersonate this service account, providing a more secure approach than using your own credentials directly.
+The Terraform service account has elevated permissions to create all required resources, while the state bucket tracks what resources have been created and their current state. Together, they provide a secure and consistent deployment process.
 </walkthrough-footnote>
 
 ## Create Terraform Configuration File
@@ -173,7 +192,8 @@ The artifact registry contains the Terraform code and container images needed fo
 
 Once you've received confirmation of artifact registry access, run the final deployment:
 
-```sh ./steps/run_terraform.sh <walkthrough-project-id/>
+```sh
+./steps/run_terraform.sh <walkthrough-project-id/>
 ```
 
 This script will:

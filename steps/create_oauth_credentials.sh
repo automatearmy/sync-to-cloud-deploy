@@ -8,60 +8,37 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "${SCRIPT_DIR}/utils.sh"
 
 # Display banner
-display_banner "OAuth Credentials Creator" "Creating OAuth clients for Google Sync to Cloud"
+display_banner "OAuth Credentials Manager" "Storing OAuth client credentials for Google Sync to Cloud"
 
 # Check required commands
 check_command "gcloud"
-check_command "jq"
 
 # Get project details from argument or from gcloud config
 PROJECT_ID=$(get_project_id "$1")
 PROJECT_NUMBER=$(get_project_number "$PROJECT_ID")
 
-# Redirect URI domain for UI client
+# Get domains and important URLs
 UI_DOMAIN="sync-to-cloud-ui-${PROJECT_NUMBER}.us-central1.run.app"
 
 log_info "Project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
 log_info "Project Number: ${COLOR_BOLD}${PROJECT_NUMBER}${COLOR_RESET}"
 log_info "UI Domain: ${COLOR_BOLD}${UI_DOMAIN}${COLOR_RESET}"
 
-# Check if OAuth consent screen exists
-log_step "Checking OAuth consent screen"
-OAUTH_APP_EXISTS=$(gcloud alpha iap oauth-brands list --format="value(name)" 2>/dev/null || echo "")
-
-if [[ -z "$OAUTH_APP_EXISTS" ]]; then
-  log_error "OAuth consent screen is not configured."
-  log_info "Please complete the OAuth consent screen setup in the Google Cloud Console first."
-  log_info "Follow the instructions in the tutorial to set up the OAuth consent screen."
-  exit 1
-else
-  log_success "OAuth consent screen is configured. Proceeding with client creation."
-fi
-
-# Create API OAuth Client (Desktop App)
-log_step "Creating API OAuth Client"
+# --- API OAuth Client (Desktop App) ---
+log_step "API OAuth Client (Desktop App)"
 
 # Check if secrets exist
 API_CLIENT_ID_EXISTS=$(gcloud secrets describe sync-to-cloud-api-client-id --project="$PROJECT_ID" 2>/dev/null || echo "")
 API_CLIENT_SECRET_EXISTS=$(gcloud secrets describe sync-to-cloud-api-client-secret --project="$PROJECT_ID" 2>/dev/null || echo "")
 
 if [[ -n "$API_CLIENT_ID_EXISTS" && -n "$API_CLIENT_SECRET_EXISTS" ]]; then
-  log_info "API OAuth client already configured in Secret Manager."
+  log_success "API OAuth client secrets already exist in Secret Manager."
 else
-  log_info "Creating API OAuth client..."
+  log_info "Please enter the client ID and secret for your Desktop App OAuth client:"
   
-  # Get brand name
-  BRAND_NAME=$(gcloud alpha iap oauth-brands list --format="value(name)" 2>/dev/null)
-  
-  # Create client
-  API_CLIENT=$(gcloud alpha iap oauth-clients create "$BRAND_NAME" \
-    --display_name="Sync to Cloud API - Admin Transfers" \
-    --type=desktop \
-    --format="json")
-  
-  # Extract client ID and secret
-  API_CLIENT_ID=$(echo "$API_CLIENT" | jq -r '.name' | sed 's|.*/||')
-  API_CLIENT_SECRET=$(echo "$API_CLIENT" | jq -r '.secret')
+  # Get client ID and secret from user
+  API_CLIENT_ID=$(ask_required "Enter API Client ID: " "Client ID is required.")
+  API_CLIENT_SECRET=$(ask_required "Enter API Client Secret: " "Client Secret is required.")
   
   # Store in Secret Manager
   log_info "Storing API client credentials in Secret Manager..."
@@ -88,41 +65,24 @@ else
     --data-file=- \
     --project="$PROJECT_ID"
   
-  log_success "API OAuth client created and stored in Secret Manager."
-  log_info "Client ID: ${COLOR_BOLD}${API_CLIENT_ID}${COLOR_RESET}"
-  # Don't display secret in logs for security
+  log_success "API OAuth client credentials stored in Secret Manager."
 fi
 
-# Create UI OAuth Client (Web App)
-log_step "Creating UI OAuth Client"
+# --- UI OAuth Client (Web App) ---
+log_step "UI OAuth Client (Web App)"
 
 # Check if secrets exist
 UI_CLIENT_ID_EXISTS=$(gcloud secrets describe sync-to-cloud-ui-client-id --project="$PROJECT_ID" 2>/dev/null || echo "")
 UI_CLIENT_SECRET_EXISTS=$(gcloud secrets describe sync-to-cloud-ui-client-secret --project="$PROJECT_ID" 2>/dev/null || echo "")
 
 if [[ -n "$UI_CLIENT_ID_EXISTS" && -n "$UI_CLIENT_SECRET_EXISTS" ]]; then
-  log_info "UI OAuth client already configured in Secret Manager."
+  log_success "UI OAuth client secrets already exist in Secret Manager."
 else
-  log_info "Creating UI OAuth client..."
+  log_info "Please enter the client ID and secret for your Web Application OAuth client:"
   
-  # Get brand name
-  BRAND_NAME=$(gcloud alpha iap oauth-brands list --format="value(name)" 2>/dev/null)
-  
-  # Create client
-  UI_CLIENT=$(gcloud alpha iap oauth-clients create "$BRAND_NAME" \
-    --display_name="Sync to Cloud UI - IAP/Auth" \
-    --type=web \
-    --javascript_origins="http://localhost,http://localhost:5001,https://${UI_DOMAIN}" \
-    --redirect_uris="https://${UI_DOMAIN}" \
-    --format="json")
-  
-  # Extract client ID and secret
-  UI_CLIENT_ID=$(echo "$UI_CLIENT" | jq -r '.name' | sed 's|.*/||')
-  UI_CLIENT_SECRET=$(echo "$UI_CLIENT" | jq -r '.secret')
-  
-  # Add IAP redirect URI
-  gcloud alpha iap oauth-clients update "$BRAND_NAME/identityAwareProxyClients/$UI_CLIENT_ID" \
-    --redirect_uris="https://${UI_DOMAIN},https://iap.googleapis.com/v1/oauth/clientIds/${UI_CLIENT_ID}:handleRedirect"
+  # Get client ID and secret from user
+  UI_CLIENT_ID=$(ask_required "Enter UI Client ID: " "Client ID is required.")
+  UI_CLIENT_SECRET=$(ask_required "Enter UI Client Secret: " "Client Secret is required.")
   
   # Store in Secret Manager
   log_info "Storing UI client credentials in Secret Manager..."
@@ -149,12 +109,10 @@ else
     --data-file=- \
     --project="$PROJECT_ID"
   
-  log_success "UI OAuth client created and stored in Secret Manager."
-  log_info "Client ID: ${COLOR_BOLD}${UI_CLIENT_ID}${COLOR_RESET}"
-  # Don't display secret in logs for security
+  log_success "UI OAuth client credentials stored in Secret Manager."
 fi
 
 # Final message
-log_step "OAuth Credentials Setup Completed"
-log_success "OAuth clients created and stored in Secret Manager."
-log_info "Client credentials are securely stored in Secret Manager and will be used during deployment."
+log_step "OAuth Credentials Setup Complete"
+display_success "OAuth client credentials are now stored in Secret Manager"
+log_info "These credentials will be used during the Terraform deployment process."
