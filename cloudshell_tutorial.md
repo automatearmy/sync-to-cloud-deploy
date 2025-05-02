@@ -188,9 +188,27 @@ Before running the final deployment, you need to request access to the Sync to C
 The artifact registry contains the Terraform code and container images needed for deployment. Once you receive confirmation of access, you can proceed to the final step.
 </walkthrough-footnote>
 
+## Pull Terraform Docker Image
+
+Once you've received confirmation of artifact registry access, you need to pull the Terraform Docker image:
+
+```sh
+./steps/pull_terraform_image.sh <walkthrough-project-id/>
+```
+
+This script will:
+
+1. Authenticate to the artifact registry using your service account
+2. Pull the Terraform Docker image
+3. Save the image information for the deployment step
+
+<walkthrough-footnote>
+The Terraform image contains all the infrastructure-as-code that will deploy Google Sync to Cloud to your project. If this step fails, ensure that you've received confirmation that your project has been granted access to the artifact registry.
+</walkthrough-footnote>
+
 ## Run Terraform Deployment
 
-Once you've received confirmation of artifact registry access, run the final deployment:
+Now that you have the Terraform image, you can run the deployment:
 
 ```sh
 ./steps/run_terraform.sh <walkthrough-project-id/>
@@ -198,12 +216,11 @@ Once you've received confirmation of artifact registry access, run the final dep
 
 This script will:
 
-1. Authenticate to the artifact registry using your service account
-2. Pull the Terraform Docker image
-3. Initialize Terraform with your state bucket
-4. Generate a plan showing all resources to be created
-5. Create all required resources (this may take 15-20 minutes)
-6. Display the URL to access your Google Sync to Cloud application
+1. Initialize Terraform with your state bucket
+2. Generate a plan showing all resources to be created
+3. Ask for confirmation before proceeding
+4. Create all required resources (this may take 15-20 minutes)
+5. Display the URL to access your Google Sync to Cloud application
 
 <walkthrough-footnote>
 The deployment process will create all necessary GCP resources, including GKE cluster, Cloud Storage buckets, IAM permissions, and Cloud Run services. Once completed, you'll receive URLs to access your deployed application.
