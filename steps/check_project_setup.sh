@@ -3,36 +3,21 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
-# --- Colors and Formatting ---
-COLOR_RESET=$(tput sgr0)
-COLOR_BOLD=$(tput bold)
-COLOR_GREEN=$(tput setaf 2)
-COLOR_YELLOW=$(tput setaf 3)
-COLOR_BLUE=$(tput setaf 4)
-COLOR_RED=$(tput setaf 1)
+# Source common utilities
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "${SCRIPT_DIR}/utils.sh"
 
-# --- Log Functions ---
-log_step() { echo -e "\n${COLOR_BOLD}${COLOR_BLUE}==> $1${COLOR_RESET}"; }
-log_info() { echo -e "${COLOR_YELLOW}[INFO]${COLOR_RESET} $1"; }
-log_success() { echo -e "${COLOR_GREEN}[SUCCESS]${COLOR_RESET} $1"; }
-log_error() { echo -e "${COLOR_RED}[ERROR]${COLOR_RESET} $1"; }
-log_fatal() {
-  log_error "$1"
-  exit 1
-}
+# Display banner
+display_banner "Project Setup Verification" "Verifying your Google Cloud project setup for Sync to Cloud"
 
-# Get project details
-PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
-if [[ -z "$PROJECT_ID" ]]; then
-  log_fatal "Could not determine GCP Project ID. Make sure it's set in gcloud config."
-fi
+# Check required commands
+check_command "gcloud"
+check_command "jq"
 
-USER_EMAIL=$(gcloud config get-value account 2>/dev/null)
-if [[ -z "$USER_EMAIL" ]]; then
-  log_fatal "Could not determine user email. Make sure you're logged in to gcloud."
-fi
+# Get project details from argument or from gcloud config
+PROJECT_ID=$(get_project_id "$1")
+USER_EMAIL=$(get_user_email)
 
-log_step "Checking project setup for Google Sync to Cloud"
 log_info "Project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
 log_info "User: ${COLOR_BOLD}${USER_EMAIL}${COLOR_RESET}"
 

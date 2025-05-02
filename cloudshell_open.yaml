@@ -4,7 +4,6 @@ tagline: By Google & Automate Army
 repoUrl: https://github.com/automatearmy/sync-to-cloud-deploy
 
 steps:
-
   - name: Install gcloud alpha components
     command: gcloud components install alpha
     highlight: true
