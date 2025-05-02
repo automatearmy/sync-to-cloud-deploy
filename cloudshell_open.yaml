@@ -4,13 +4,16 @@ tagline: By Google & Automate Army
 repoUrl: https://github.com/automatearmy/sync-to-cloud-deploy
 
 steps:
-  - name: Read prerequisites
-    command: cat PREREQUISITES.md
+
+  - name: Install gcloud alpha components
+    command: gcloud components install alpha
     highlight: true
     showMessage: true
 
-  - name: Make the deploy script executable
-    command: chmod +x deploy.sh
+  - name: Make scripts executable
+    command: chmod -R +x steps/
+    highlight: true
+    showMessage: true
 
   - name: Launch the deployment tutorial
     command: cloudshell launch-tutorial cloudshell_tutorial.md
