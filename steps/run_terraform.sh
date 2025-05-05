@@ -44,10 +44,17 @@ if [[ -z "$TF_STATE_BUCKET" ]]; then
   log_info "State bucket environment file not found, using default: ${COLOR_BOLD}${TF_STATE_BUCKET}${COLOR_RESET}"
 fi
 
-log_step "Running Terraform Deployment"
-log_info "Project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
-log_info "Service Account: ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
-log_info "State Bucket: ${COLOR_BOLD}${TF_STATE_BUCKET}${COLOR_RESET}"
+# Generate OAuth token for service account impersonation
+log_step "Generating OAuth token for service account impersonation"
+log_info "Impersonating service account: ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
+
+# Export the OAuth token
+export GOOGLE_OAUTH_ACCESS_TOKEN=$(gcloud auth print-access-token --impersonate-service-account="${TF_SERVICE_ACCOUNT}")
+if [[ -z "$GOOGLE_OAUTH_ACCESS_TOKEN" ]]; then
+  log_error "Failed to generate OAuth access token. Please check your permissions."
+  exit 1
+fi
+log_success "OAuth token generated successfully."
 
 # Check if terraform.tfvars exists
 if [[ ! -f "terraform.tfvars" ]]; then
@@ -56,56 +63,57 @@ if [[ ! -f "terraform.tfvars" ]]; then
   exit 1
 fi
 
-# Run Terraform init
-log_step "Initializing Terraform"
-log_info "This step sets up Terraform to use your state bucket and providers..."
+log_step "Running Terraform Deployment"
+log_info "Project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
+log_info "Service Account: ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
+log_info "State Bucket: ${COLOR_BOLD}${TF_STATE_BUCKET}${COLOR_RESET}"
 
-docker run --rm \
-  -v "$(pwd)/terraform.tfvars:/app/terraform.tfvars:ro" \
-  -v "$HOME/.config/gcloud:/root/.config/gcloud:ro" \
-  -e GOOGLE_IMPERSONATE_SERVICE_ACCOUNT="${TF_SERVICE_ACCOUNT}" \
-  "${TERRAFORM_IMAGE}" \
-  init -backend-config="bucket=${TF_STATE_BUCKET}"
+# Set up for Terraform deployment
 
-log_success "Terraform initialization completed."
+# Run Terraform operations in sequence with consistent state
+log_step "Running Terraform commands (init, plan, apply) in sequence"
+log_info "This approach ensures Terraform state is preserved between commands..."
 
-# Run Terraform plan
-log_step "Running Terraform plan"
-log_info "This step will show what resources will be created..."
-
-docker run --rm \
-  -v "$(pwd)/terraform.tfvars:/app/terraform.tfvars:ro" \
-  -v "$HOME/.config/gcloud:/root/.config/gcloud:ro" \
-  -e GOOGLE_IMPERSONATE_SERVICE_ACCOUNT="${TF_SERVICE_ACCOUNT}" \
-  "${TERRAFORM_IMAGE}" \
-  plan -var-file=/app/terraform.tfvars
-
-# Ask for confirmation before applying
+# Ask for confirmation before proceeding
 if ask_confirmation "Do you want to proceed with deployment?"; then
-  # Run Terraform apply
-  log_step "Running Terraform apply"
-  log_info "This step will create all the resources for Google Sync to Cloud..."
-  log_info "This may take 15-20 minutes to complete. Please be patient."
+  # Create a custom entrypoint script for our container
+  ENTRYPOINT_SCRIPT="$(mktemp)"
+  cat > "${ENTRYPOINT_SCRIPT}" << 'EOF'
+#!/bin/sh
+set -e
 
+# Run terraform init
+echo "Running terraform init..."
+terraform init -backend-config="bucket=$1" -input=false
+
+# Run terraform plan
+echo "Running terraform plan..."
+terraform plan -var-file=/workspace/terraform.tfvars -input=false
+
+# Run terraform apply
+echo "Running terraform apply..."
+terraform apply -var-file=/workspace/terraform.tfvars -auto-approve -input=false
+
+# Show outputs
+echo "Showing terraform outputs..."
+terraform output
+EOF
+  chmod +x "${ENTRYPOINT_SCRIPT}"
+  
+  # Run all terraform commands in a single container
+  log_info "Running all Terraform commands in a single execution..."
   docker run --rm \
-    -v "$(pwd)/terraform.tfvars:/app/terraform.tfvars:ro" \
-    -v "$HOME/.config/gcloud:/root/.config/gcloud:ro" \
-    -e GOOGLE_IMPERSONATE_SERVICE_ACCOUNT="${TF_SERVICE_ACCOUNT}" \
+    -v "$(pwd)/terraform.tfvars:/workspace/terraform.tfvars:ro" \
+    -v "${ENTRYPOINT_SCRIPT}:/entrypoint.sh:ro" \
+    -e GOOGLE_OAUTH_ACCESS_TOKEN="${GOOGLE_OAUTH_ACCESS_TOKEN}" \
+    --entrypoint "/entrypoint.sh" \
     "${TERRAFORM_IMAGE}" \
-    apply -var-file=/app/terraform.tfvars -auto-approve
+    "${TF_STATE_BUCKET}"
+    
+  # Clean up the temporary script
+  rm -f "${ENTRYPOINT_SCRIPT}"
 
   log_success "Terraform deployment completed successfully!"
-
-  # Get outputs
-  log_step "Deployment Outputs"
-  log_info "Here are the details of your Google Sync to Cloud deployment:"
-
-  docker run --rm \
-    -v "$(pwd)/terraform.tfvars:/app/terraform.tfvars:ro" \
-    -v "$HOME/.config/gcloud:/root/.config/gcloud:ro" \
-    -e GOOGLE_IMPERSONATE_SERVICE_ACCOUNT="${TF_SERVICE_ACCOUNT}" \
-    "${TERRAFORM_IMAGE}" \
-    output
 else
   log_info "Deployment cancelled."
   exit 0
