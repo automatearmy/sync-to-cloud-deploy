@@ -70,6 +70,7 @@ log_step "Enabling required Google Cloud APIs"
 
 # List of APIs to enable to create service accounts
 apis=(
+  "run.googleapis.com"
   "cloudidentity.googleapis.com"
   "cloudresourcemanager.googleapis.com"
   "compute.googleapis.com"
