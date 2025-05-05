@@ -106,6 +106,7 @@ EOF
     -v "$(pwd)/terraform.tfvars:/workspace/terraform.tfvars:ro" \
     -v "${ENTRYPOINT_SCRIPT}:/entrypoint.sh:ro" \
     -e GOOGLE_OAUTH_ACCESS_TOKEN="${GOOGLE_OAUTH_ACCESS_TOKEN}" \
+    -e CLOUDSDK_AUTH_ACCESS_TOKEN="${GOOGLE_OAUTH_ACCESS_TOKEN}" \
     --entrypoint "/entrypoint.sh" \
     "${TERRAFORM_IMAGE}" \
     "${TF_STATE_BUCKET}"
