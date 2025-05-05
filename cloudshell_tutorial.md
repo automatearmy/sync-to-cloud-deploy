@@ -92,29 +92,27 @@ Now that you've configured the OAuth consent screen, you need to create two OAut
 5. Click "Create"
 6. **Copy and save the Client ID and Client Secret** - you'll need them in the next step
 
-### 2. Create UI OAuth Client (Web App) 
+### 2. Create UI OAuth Client (Web App)
 
 1. Go to [Credentials](https://console.cloud.google.com/apis/credentials?project=<walkthrough-project-id/>) again
 2. Click "Create Credentials" > "OAuth client ID"
 3. Select "Web Application" as the application type
 4. Name: "Sync to Cloud UI - IAP/Auth"
 5. Add the following Authorized JavaScript origins:
-   * `http://localhost`
-   * `http://localhost:5001`
-   * `https://sync-to-cloud-ui-PROJECT_NUMBER.us-central1.run.app`
+   - `https://sync-to-cloud-ui-PROJECT_NUMBER.us-central1.run.app`
      (Replace PROJECT_NUMBER with your project number from this command:
      ```sh
      gcloud projects describe <walkthrough-project-id/> --format="value(projectNumber)"
      ```
      )
 6. Add the following Authorized redirect URIs:
-   * `https://sync-to-cloud-ui-PROJECT_NUMBER.us-central1.run.app`
-   * (Use the same PROJECT_NUMBER as above)
+   - `https://sync-to-cloud-ui-PROJECT_NUMBER.us-central1.run.app`
+   - (Use the same PROJECT_NUMBER as above)
 7. Click "Create"
 8. **Copy and save the Client ID and Client Secret** - you'll need them in the next step
 9. **Important**: After creation, edit this client and add this additional redirect URI:
-   * `https://iap.googleapis.com/v1/oauth/clientIds/CLIENT_ID:handleRedirect`
-   * (Replace CLIENT_ID with the client ID you just received)
+   - `https://iap.googleapis.com/v1/oauth/clientIds/CLIENT_ID:handleRedirect`
+   - (Replace CLIENT_ID with the client ID you just received)
 
 ### 3. Store the OAuth credentials
 
@@ -125,6 +123,7 @@ Now, run the script to securely store your OAuth credentials in Secret Manager:
 ```
 
 The script will:
+
 1. Prompt you to enter the Client ID and Client Secret for each OAuth client you created
 2. Store these credentials securely in Secret Manager
 3. Make them available for the deployment process
@@ -237,6 +236,7 @@ You've successfully deployed Google Sync to Cloud to your Google Cloud project! 
 3. Begin setting up transfers from Google Drive to Cloud Storage
 
 **For technical support or questions:**
+
 - Email: team@automatearmy.com
 - Documentation: https://docs.sync-to-cloud.dev
 
