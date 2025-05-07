@@ -31,15 +31,25 @@ Let's start by selecting the Google Cloud project where you'll deploy Google Syn
 
 Your selected project is: **<walkthrough-project-id/>**
 
-## Project and Script Setup
+## Project Configuration
 
-Let's configure your selected project and prepare all the scripts for this tutorial:
+Let's configure your selected project:
 
 ```sh
-gcloud config set project <walkthrough-project-id/> && chmod +x steps/*.sh
+gcloud config set project <walkthrough-project-id/>
 ```
 
-This sets your current project and makes all deployment scripts executable.
+This command configures your Cloud Shell environment to use your selected project. All subsequent commands and deployments will target this project.
+
+## Script Preparation
+
+Let's prepare the deployment scripts by making them executable:
+
+```sh
+chmod +x steps/*.sh
+```
+
+This command makes all shell scripts (*.sh files) in the steps/ directory executable by adding the execute (+x) permission.
 
 ## Project Permissions Check
 
@@ -56,7 +66,8 @@ This script will:
 3. Enable the necessary Google Cloud APIs for Google Sync to Cloud
 
 <walkthrough-footnote>
-If the script indicates any missing permissions or requirements, please address them before continuing. You must have Owner role and Service Account Token Creator role on the project.
+If the script indicates any missing permissions or requirements, please address them before continuing. 
+You must have BOTH the Owner role AND Service Account Token Creator role on the project. While the Owner role gives you access to most GCP resources, the Service Account Token Creator role is a separate permission that may still fail even with Owner access.
 </walkthrough-footnote>
 
 ## OAuth Consent Screen Configuration
@@ -79,22 +90,22 @@ First, let's configure the OAuth consent screen:
 The OAuth consent screen must be configured before creating OAuth clients.
 </walkthrough-footnote>
 
-## Create OAuth Clients
+## Create API OAuth Client
 
-Now that you've configured the OAuth consent screen, you need to create two OAuth clients and then store their credentials:
-
-### 1. Create API OAuth Client (Desktop App)
+First, let's create the OAuth client for the API service:
 
 1. Go to [Credentials](https://console.cloud.google.com/apis/credentials?project=<walkthrough-project-id/>) in the Google Cloud Console
 2. Click "Create Credentials" > "OAuth client ID"
 3. Select "Desktop App" as the application type
-4. Name: "Sync to Cloud API - Admin Transfers"
+4. Name: "Sync to Cloud API"
 5. Click "Create"
-6. **Copy and save the Client ID and Client Secret** - you'll need them in the next step
+6. **Copy and save the Client ID and Client Secret** - you'll need them in a later step
 
-### 2. Create UI OAuth Client (Web App)
+## Create UI OAuth Client
 
-1. Go to [Credentials](https://console.cloud.google.com/apis/credentials?project=<walkthrough-project-id/>) again
+Next, let's create the OAuth client for the web UI:
+
+1. Go to [Credentials](https://console.cloud.google.com/apis/credentials?project=<walkthrough-project-id/>) in the Google Cloud Console
 2. Click "Create Credentials" > "OAuth client ID"
 3. Select "Web Application" as the application type
 4. Name: "Sync to Cloud UI - IAP/Auth"
@@ -110,9 +121,6 @@ Now that you've configured the OAuth consent screen, you need to create two OAut
    - (Use the same PROJECT_NUMBER as above)
 7. Click "Create"
 8. **Copy and save the Client ID and Client Secret** - you'll need them in the next step
-9. **Important**: After creation, edit this client and add this additional redirect URI:
-   - `https://iap.googleapis.com/v1/oauth/clientIds/CLIENT_ID:handleRedirect`
-   - (Replace CLIENT_ID with the client ID you just received)
 
 ### 3. Store the OAuth credentials
 
@@ -144,7 +152,7 @@ This script will:
 
 1. Create a service account named `terraform-admin` with Owner permissions
 2. Ensure you have permission to impersonate this service account
-3. Create a Cloud Storage bucket named `terraform-state-<walkthrough-project-id/>`
+3. Create a Cloud Storage bucket named `<walkthrough-project-id/>-terraform-state`
 4. Enable versioning on the bucket for state file history
 5. Save the configuration for later use in the deployment process
 
@@ -160,22 +168,17 @@ Now, let's create the Terraform configuration file that will be used for deploym
 ./steps/create_terraform_tfvars.sh <walkthrough-project-id/>
 ```
 
-This script will:
-
-1. Create a `terraform.tfvars` file with your project settings
-2. Configure the deployment region (default: us-central1)
-3. Set up **required** domain-wide delegation
-4. Configure BigQuery settings for inventory reporting
+This script will create a `terraform.tfvars` file with your project settings
 
 <walkthrough-footnote>
-**IMPORTANT**: Domain-wide delegation is **required** for Google Sync to Cloud to function properly. You'll need to provide a service account email that will be granted permission to access Google Drive files. You'll also need to configure this delegation in your Google Workspace admin console.
+You'll need to provide a admin user account email that will be granted permission to access Google Drive files. You'll also need to configure this delegation in your Google Workspace admin console.
 </walkthrough-footnote>
 
 ## Request Access to Artifact Registry
 
 Before running the final deployment, you need to request access to the Sync to Cloud artifact registry:
 
-1. Contact the Sync to Cloud team at team@automatearmy.com
+1. Contact the Sync to Cloud team at zach.zimbler@automatearmy.com or via deployment call
 2. Provide them with your Google Cloud project ID: **<walkthrough-project-id/>**
 3. Provide them with your project number (run this command to get it):
    ```sh
@@ -184,7 +187,8 @@ Before running the final deployment, you need to request access to the Sync to C
 4. Wait for confirmation that your project has been granted access
 
 <walkthrough-footnote>
-The artifact registry contains the Terraform code and container images needed for deployment. Once you receive confirmation of access, you can proceed to the final step.
+The artifact registry contains the Terraform code and container images needed for deployment. 
+Once you receive confirmation of access, you can proceed to the final step.
 </walkthrough-footnote>
 
 ## Pull Terraform Docker Image

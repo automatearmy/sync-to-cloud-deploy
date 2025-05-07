@@ -13,7 +13,7 @@ Google Sync to Cloud is a powerful tool that helps you seamlessly move files fro
 - A Google Cloud project with billing enabled
 - **Owner** and **Service Account Token Creator** permissions on the project
 - Google Workspace admin access (for domain-wide delegation)
-- A service account email for domain-wide delegation
+- A admin user account email for domain-wide delegation
 
 ## Deployment Process
 
@@ -42,9 +42,9 @@ The deployment creates the following resources in your Google Cloud project:
 
 During deployment, you'll be prompted for:
 
-- **Region**: Google Cloud region for resource deployment (default: us-central1)
-- **Service Account Email**: For domain-wide delegation (required)
-- **BigQuery Settings**: For inventory reporting
+- **Region**: Google Cloud region for resource deployment
+- **User Account Email**: For domain-wide delegation
+- **BigQuery Settings**: With Drive Inventory reporting enabled
   - Project ID
   - Dataset name
   - Table name
@@ -64,7 +64,7 @@ If you encounter issues during deployment:
 1. Ensure you have both Owner and Service Account Token Creator roles
 2. Verify billing is enabled for your project
 3. Check that the OAuth consent screen is properly configured
-4. Make sure your project has access to the Sync to Cloud artifact registry
+4. Make sure your project has access to the Sync to Cloud artifact registry (only authorized universities)
 
 For technical support, contact team@automatearmy.com.
 
