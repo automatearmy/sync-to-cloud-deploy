@@ -101,7 +101,7 @@ apis=(
 log_info "Enabling ${#apis[@]} required APIs. This may take a few minutes..."
 
 # Enable APIs
-gcloud services enable "${apis[@]}" --project="$PROJECT_ID"
+gcloud services enable "${apis[@]}" --project="$PROJECT_ID" &>/dev/null
 
 log_success "All required APIs enabled successfully."
 
