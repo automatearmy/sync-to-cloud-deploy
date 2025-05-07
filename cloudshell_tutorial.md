@@ -1,3 +1,5 @@
+<!-- #################### WELCOME #################### -->
+<!-- #################### WELCOME #################### -->
 # Welcome to Google Sync to Cloud Deployment
 
 <walkthrough-tutorial-duration duration="60"></walkthrough-tutorial-duration>
@@ -10,7 +12,7 @@ Before you begin, you'll need:
 
 - A Google Cloud project with billing enabled
 - **Owner** and **Service Account Token Creator** permissions on the project
-- Google Workspace admin access (for domain-wide delegation)
+- Google Workspace admin access
 
 **Is This Safe?**
 
@@ -23,6 +25,9 @@ All scripts in this tutorial are designed with security in mind:
 
 Click the **Next** button to begin setting up your project.
 
+
+<!-- #################### STEP 1 #################### -->
+<!-- #################### STEP 1 #################### -->
 ## Project Selection and Setup
 
 Let's start by selecting the Google Cloud project where you'll deploy Google Sync to Cloud.
@@ -31,6 +36,13 @@ Let's start by selecting the Google Cloud project where you'll deploy Google Syn
 
 Your selected project is: **<walkthrough-project-id/>**
 
+<walkthrough-footnote>
+Selecting the right project is crucial as it will contain all the resources for Google Sync to Cloud. Make sure you choose a project where billing is enabled to ensure successful deployment.
+</walkthrough-footnote>
+
+
+<!-- #################### STEP 2 #################### -->
+<!-- #################### STEP 2 #################### -->
 ## Project Configuration
 
 Let's configure your selected project:
@@ -41,6 +53,13 @@ gcloud config set project <walkthrough-project-id/>
 
 This command configures your Cloud Shell environment to use your selected project. All subsequent commands and deployments will target this project.
 
+<walkthrough-footnote>
+If you switch between multiple projects, you'll need to run this command again to target the correct project.
+</walkthrough-footnote>
+
+
+<!-- #################### STEP 3 #################### -->
+<!-- #################### STEP 3 #################### -->
 ## Script Preparation
 
 Let's prepare the deployment scripts by making them executable:
@@ -51,6 +70,14 @@ chmod +x steps/*.sh
 
 This command makes all shell scripts (*.sh files) in the steps/ directory executable by adding the execute (+x) permission.
 
+<walkthrough-footnote>
+These scripts are part of the deployment process and will help set up your Google Sync to Cloud environment. 
+Each script is designed to be idempotent, meaning it's safe to run multiple times if needed.
+</walkthrough-footnote>
+
+
+<!-- #################### STEP 4 #################### -->
+<!-- #################### STEP 4 #################### -->
 ## Project Permissions Check
 
 Now, let's make sure you have the necessary permissions on this project and enable required APIs:
@@ -70,6 +97,9 @@ If the script indicates any missing permissions or requirements, please address 
 You must have BOTH the Owner role AND Service Account Token Creator role on the project. While the Owner role gives you access to most GCP resources, the Service Account Token Creator role is a separate permission that may still fail even with Owner access.
 </walkthrough-footnote>
 
+
+<!-- #################### STEP 5 #################### -->
+<!-- #################### STEP 5 #################### -->
 ## OAuth Consent Screen Configuration
 
 Now we need to configure the OAuth consent screen and create OAuth credentials for Google Sync to Cloud.
@@ -90,6 +120,9 @@ First, let's configure the OAuth consent screen:
 The OAuth consent screen must be configured before creating OAuth clients.
 </walkthrough-footnote>
 
+
+<!-- #################### STEP 6 #################### -->
+<!-- #################### STEP 6 #################### -->
 ## Create API OAuth Client
 
 First, let's create the OAuth client for the API service:
@@ -101,6 +134,14 @@ First, let's create the OAuth client for the API service:
 5. Click "Create"
 6. **Copy and save the Client ID and Client Secret** - you'll need them in a later step
 
+<walkthrough-footnote>
+The API OAuth client will be used by the backend services to authenticate with Google APIs. 
+Make sure to keep the client secret secure and never commit it to version control.
+</walkthrough-footnote>
+
+
+<!-- #################### STEP 7 #################### -->
+<!-- #################### STEP 7 #################### -->
 ## Create UI OAuth Client
 
 Next, let's create the OAuth client for the web UI:
@@ -109,20 +150,25 @@ Next, let's create the OAuth client for the web UI:
 2. Click "Create Credentials" > "OAuth client ID"
 3. Select "Web Application" as the application type
 4. Name: "Sync to Cloud UI - IAP/Auth"
-5. Add the following Authorized JavaScript origins:
+5. Get your project number by running:
+   ```sh
+   gcloud projects describe <walkthrough-project-id/> --format="value(projectNumber)"
+   ```
+6. Using your project number from above, add the following URL as both the Authorized JavaScript origin and Authorized redirect URI:
    - `https://sync-to-cloud-ui-PROJECT_NUMBER.us-central1.run.app`
-     (Replace PROJECT_NUMBER with your project number from this command:
-     ```sh
-     gcloud projects describe <walkthrough-project-id/> --format="value(projectNumber)"
-     ```
-     )
-6. Add the following Authorized redirect URIs:
-   - `https://sync-to-cloud-ui-PROJECT_NUMBER.us-central1.run.app`
-   - (Use the same PROJECT_NUMBER as above)
+   (Replace PROJECT_NUMBER with the number from step 5)
 7. Click "Create"
 8. **Copy and save the Client ID and Client Secret** - you'll need them in the next step
 
-### 3. Store the OAuth credentials
+<walkthrough-footnote>
+The UI OAuth client will be used by the frontend services to authenticate with Google APIs and to IAP. 
+Make sure to keep the client secret secure and never commit it to version control.
+</walkthrough-footnote>
+
+
+<!-- #################### STEP 8 #################### -->
+<!-- #################### STEP 8 #################### -->
+## Store the OAuth credentials
 
 Now, run the script to securely store your OAuth credentials in Secret Manager:
 
@@ -140,6 +186,9 @@ The script will:
 The OAuth clients you created will allow Google Sync to Cloud to securely authenticate with Google APIs and services. Keep your client secrets secure and do not share them.
 </walkthrough-footnote>
 
+
+<!-- #################### STEP 9 #################### -->
+<!-- #################### STEP 9 #################### -->
 ## Setup Terraform Infrastructure
 
 Now, let's set up the Terraform infrastructure needed for deployment. This includes creating a service account with the necessary permissions and a Cloud Storage bucket to store Terraform's state files.
@@ -160,6 +209,9 @@ This script will:
 The Terraform service account has elevated permissions to create all required resources, while the state bucket tracks what resources have been created and their current state. Together, they provide a secure and consistent deployment process.
 </walkthrough-footnote>
 
+
+<!-- #################### STEP 10 #################### -->
+<!-- #################### STEP 10 #################### -->
 ## Create Terraform Configuration File
 
 Now, let's create the Terraform configuration file that will be used for deployment:
@@ -174,6 +226,9 @@ This script will create a `terraform.tfvars` file with your project settings
 You'll need to provide a admin user account email that will be granted permission to access Google Drive files. You'll also need to configure this delegation in your Google Workspace admin console.
 </walkthrough-footnote>
 
+
+<!-- #################### STEP 11 #################### -->
+<!-- #################### STEP 11 #################### -->
 ## Request Access to Artifact Registry
 
 Before running the final deployment, you need to request access to the Sync to Cloud artifact registry:
@@ -191,6 +246,9 @@ The artifact registry contains the Terraform code and container images needed fo
 Once you receive confirmation of access, you can proceed to the final step.
 </walkthrough-footnote>
 
+
+<!-- #################### STEP 12 #################### -->
+<!-- #################### STEP 12 #################### -->
 ## Pull Terraform Docker Image
 
 Once you've received confirmation of artifact registry access, you need to pull the Terraform Docker image:
@@ -209,6 +267,9 @@ This script will:
 The Terraform image contains all the infrastructure-as-code that will deploy Google Sync to Cloud to your project. If this step fails, ensure that you've received confirmation that your project has been granted access to the artifact registry.
 </walkthrough-footnote>
 
+
+<!-- #################### STEP 13 #################### -->
+<!-- #################### STEP 13 #################### -->
 ## Run Terraform Deployment
 
 Now that you have the Terraform image, you can run the deployment:
@@ -229,6 +290,9 @@ This script will:
 The deployment process will create all necessary GCP resources, including GKE cluster, Cloud Storage buckets, IAM permissions, and Cloud Run services. Once completed, you'll receive URLs to access your deployed application.
 </walkthrough-footnote>
 
+
+<!-- #################### FINAL STEP #################### -->
+<!-- #################### FINAL STEP #################### -->
 ## Congratulations!
 
 <walkthrough-conclusion-trophy></walkthrough-conclusion-trophy>
@@ -245,3 +309,8 @@ You've successfully deployed Google Sync to Cloud to your Google Cloud project! 
 - Documentation: https://docs.sync-to-cloud.dev
 
 Thank you for using Google Sync to Cloud!
+
+<walkthrough-footnote>
+If you need to redeploy or make changes in the future, you can always return to the Cloud Shell and run the deployment scripts again. 
+All resources will be managed by Terraform, ensuring consistent and repeatable deployments.
+</walkthrough-footnote>
