@@ -66,6 +66,7 @@ fi
 
 # Grant Owner role to the service account
 log_info "Granting 'roles/owner' to service account '$SA_EMAIL'..."
+sleep 5 # Make sure service account exists
 gcloud projects add-iam-policy-binding "$PROJECT_ID" \
   --member="serviceAccount:$SA_EMAIL" \
   --role="roles/owner" \
@@ -128,6 +129,7 @@ else
   
   # Enable versioning
   log_info "Enabling versioning on the bucket..."
+  sleep 5 # Make sure bucket exists
   gsutil versioning set on "gs://${BUCKET_NAME}" &>/dev/null
   log_success "Versioning enabled on the bucket."
 fi
