@@ -180,17 +180,6 @@ check_command() {
   log_debug "Command '$cmd' found."
 }
 
-# --- Export Variables to File ---
-# Exports a variable to a file for later use
-export_var() {
-  local var_name="$1"
-  local var_value="$2"
-  local file_name="$3"
-  
-  echo "export ${var_name}=${var_value}" > "$file_name"
-  log_debug "Variable ${var_name} exported to ${file_name}"
-}
-
 # --- Display Script Banner ---
 # Display a banner for the script
 display_banner() {

@@ -35,12 +35,8 @@ check_command "gcloud"
 PROJECT_ID=$(get_project_id "$1")
 PROJECT_NUMBER=$(get_project_number "$PROJECT_ID")
 
-# Get domains and important URLs
-UI_DOMAIN="sync-to-cloud-ui-${PROJECT_NUMBER}.us-central1.run.app"
-
 log_info "Project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
 log_info "Project Number: ${COLOR_BOLD}${PROJECT_NUMBER}${COLOR_RESET}"
-log_info "UI Domain: ${COLOR_BOLD}${UI_DOMAIN}${COLOR_RESET}"
 
 # --- API OAuth Client (Desktop App) ---
 log_step "API OAuth Client (Desktop App)"
@@ -131,6 +127,6 @@ else
 fi
 
 # Final message
-log_step "OAuth Credentials Setup Complete"
-display_success "OAuth client credentials are now stored in Secret Manager"
-log_info "These credentials will be used during the Terraform deployment process."
+log_step "OAuth Credentials setup completed successfully!"
+log_info "OAuth client credentials are now stored in Secret Manager"
+log_info "You can now proceed to the next step."

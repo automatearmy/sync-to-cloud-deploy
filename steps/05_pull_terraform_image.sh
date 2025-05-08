@@ -35,54 +35,66 @@ check_command "jq"
 
 # Get project details from argument or from gcloud config
 PROJECT_ID=$(get_project_id "$1")
+PROJECT_NUMBER=$(get_project_number "$PROJECT_ID")
+TF_SERVICE_ACCOUNT="terraform-admin@${PROJECT_ID}.iam.gserviceaccount.com"
 
-# Get terraform service account email from file or use default
-TF_SERVICE_ACCOUNT=""
-if [[ -f "tf_sa_env.sh" ]]; then
-  source tf_sa_env.sh
-  TF_SERVICE_ACCOUNT="$TF_SERVICE_ACCOUNT_EMAIL"
-else
-  # If not available, construct it based on standard naming
-  TF_SERVICE_ACCOUNT="terraform-admin@${PROJECT_ID}.iam.gserviceaccount.com"
-  log_info "Service account environment file not found, using default: ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
-fi
-
-log_step "Pulling Terraform Docker Image"
 log_info "Project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
-log_info "Service Account: ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
+log_info "Project Number: ${COLOR_BOLD}${PROJECT_NUMBER}${COLOR_RESET}"
+log_info "Terraform Service Account: ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
 
-# Verify access to artifact registry
-log_step "Checking access to artifact registry"
-log_info "Verifying you have access to the Sync to Cloud artifact registry..."
+# Verify access to docker and service account impersonation
+log_step "Authenticating with Docker and Service Account"
+log_info "Verifying Docker installation and generating credentials for ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
 
 # Get short-lived access token for the Terraform service account
 log_info "Generating access token for service account impersonation..."
-TOKEN=$(gcloud auth print-access-token --impersonate-service-account="${TF_SERVICE_ACCOUNT}")
+TOKEN=$(gcloud auth print-access-token --impersonate-service-account="${TF_SERVICE_ACCOUNT}" 2>/dev/null)
 
-if [[ -z "$TOKEN" ]]; then
+if [[ -n "$TOKEN" ]]; then
+  log_success "Successfully generated access token for service account impersonation."
+else
   log_error "Failed to generate access token for service account impersonation."
   log_info "Please ensure you have the Service Account Token Creator role and try again."
   exit 1
 fi
 
+# Verify access to docker
+log_step "Authenticating with Docker"
+log_info "Logging into Docker and with service account credentials"
+
 # Configure Docker to use the service account credentials via isolated config
 log_info "Configuring Docker authentication with temporary config..."
 export DOCKER_CONFIG=$(mktemp -d)
-echo "$TOKEN" | docker --config "$DOCKER_CONFIG" login -u oauth2accesstoken --password-stdin https://us-central1-docker.pkg.dev
+if ! echo "$TOKEN" | docker --config "$DOCKER_CONFIG" login -u oauth2accesstoken --password-stdin https://us-central1-docker.pkg.dev >/dev/null 2>&1; then
+  log_error "Failed to authenticate with docker registry"
+  exit 1
+fi
+log_success "Successfully authenticated with docker registry"
+
+# Pull Terraform image
+log_step "Pulling Terraform Image"
+log_info "Pulling Terraform image from Sync to Cloud artifact registry"
 
 # Pull the Terraform Docker image
 log_info "Image: ${COLOR_BOLD}${TERRAFORM_IMAGE}${COLOR_RESET}"
 
-if ! docker --config "$DOCKER_CONFIG" pull "${TERRAFORM_IMAGE}"; then
+if docker --config "$DOCKER_CONFIG" pull "${TERRAFORM_IMAGE}"; then
+  log_success "Successfully pulled Terraform Docker image"
+else
   log_error "Failed to pull the Terraform Docker image."
   log_info "Please confirm with the Sync to Cloud team that your project (${PROJECT_ID}) has access to the artifact registry."
   rm -rf "$DOCKER_CONFIG"
   exit 1
 fi
 
+# Pull Terraform image
+log_step "Cleaning Docker Configuration"
+log_info "Cleaning up temporary Docker configuration"
+
 # Clean up Docker config
 rm -rf "$DOCKER_CONFIG"
+log_success "Cleaned Docker configuration files"
 
-
-log_success "Terraform Docker image pulled successfully"
-log_info "You can now proceed to run Terraform commands using the run_terraform.sh script."
+log_step "Docker image pull completed successfully!"
+log_info "Image: ${COLOR_BOLD}${TERRAFORM_IMAGE}${COLOR_RESET}"
+log_info "You can now proceed to the next step."

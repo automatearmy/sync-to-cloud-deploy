@@ -28,24 +28,16 @@ source "${SCRIPT_DIR}/env.sh"
 # Display banner
 display_banner "Terraform Configuration Generator" "Creating terraform.tfvars for Google Sync to Cloud deployment"
 
-# Get project ID from argument or from gcloud config
+# Get project details from argument or from gcloud config
 PROJECT_ID=$(get_project_id "$1")
 PROJECT_NUMBER=$(get_project_number "$PROJECT_ID")
+TF_SERVICE_ACCOUNT="terraform-admin@${PROJECT_ID}.iam.gserviceaccount.com"
 
-log_step "Creating Terraform configuration file (terraform.tfvars)"
 log_info "Project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
 log_info "Project Number: ${COLOR_BOLD}${PROJECT_NUMBER}${COLOR_RESET}"
+log_info "Terraform Service Account: ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
 
-# Load Terraform service account email if available
-TF_SERVICE_ACCOUNT=""
-if [[ -f "tf_sa_env.sh" ]]; then
-  source tf_sa_env.sh
-  TF_SERVICE_ACCOUNT="$TF_SERVICE_ACCOUNT_EMAIL"
-else
-  # If not available, construct it based on standard naming
-  TF_SERVICE_ACCOUNT="terraform-admin@${PROJECT_ID}.iam.gserviceaccount.com"
-  log_info "Service account environment file not found, using default: ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
-fi
+log_step "Creating terraform.tfvars"
 
 # Ask for region (required)
 log_step "Region Configuration"
@@ -53,14 +45,13 @@ log_info "Specify the Google Cloud region to deploy the resources."
 REGION=$(ask_with_default "Enter region" "us-central1" "Common regions: us-central1, us-east1, us-west1, europe-west1, asia-east1")
 log_success "Region set to: ${COLOR_BOLD}${REGION}${COLOR_RESET}"
 
-# Ask for domain-wide delegation email (REQUIRED)
-log_step "Domain-wide Delegation Setup (REQUIRED)"
-log_info "Google Sync to Cloud requires domain-wide delegation to access Google Drive files."
-log_info "You need to provide a service account email that will be used for Drive access."
-API_USER_EMAIL=$(ask_required "Enter service account email for domain-wide delegation: " "Domain-wide delegation email is required.")
-log_success "API User Email set to: ${COLOR_BOLD}${API_USER_EMAIL}${COLOR_RESET}"
-log_info "You will need to configure domain-wide delegation for this service account in Google Workspace."
-log_info "Instructions: https://developers.google.com/admin-sdk/directory/v1/guides/delegation"
+# Ask for workspace admin user
+log_step "Workspace Admin User Configuration"
+log_info "Google Sync to Cloud requires a Google Workspace admin user account."
+log_info "This should be a regular user email (like user@domain.edu) with admin privileges in your Google Workspace."
+log_info "The API will use this account to access and list labels across your entire organization."
+WORKSPACE_ADMIN_USER_EMAIL=$(ask_required "Enter user account email for listing labels: " "E-mail is required.")
+log_success "Workspace Admin User set to: ${COLOR_BOLD}${API_USER_EMAIL}${COLOR_RESET}"
 
 # Ask for environment name
 log_step "Environment Configuration"
@@ -70,61 +61,61 @@ log_success "Environment set to: ${COLOR_BOLD}${ENVIRONMENT}${COLOR_RESET}"
 
 # Ask for BigQuery Configuration
 log_step "BigQuery Configuration"
-log_info "Configure BigQuery for Drive inventory reports."
+log_info "Google Sync to Cloud requires access to a BigQuery project where your Drive inventory report is configured and running."
+log_info "This allows the application to pull file metadata and run transfer operations."
 
 # Ask for BigQuery project ID
-BQ_PROJECT_ID=$(ask_with_default "Enter BigQuery project ID" "$PROJECT_ID" "Project where BigQuery dataset will be created (usually the same as your project ID).")
+BQ_PROJECT_ID=$(ask_required "Enter BigQuery project ID: " "BigQuery project ID is required.")
 log_success "BigQuery project ID set to: ${COLOR_BOLD}${BQ_PROJECT_ID}${COLOR_RESET}"
+echo ""
 
 # Ask for BigQuery dataset
 BQ_DATASET=$(ask_required "Enter BigQuery dataset name: " "BigQuery dataset name is required.")
 log_success "BigQuery dataset set to: ${COLOR_BOLD}${BQ_DATASET}${COLOR_RESET}"
+echo ""
 
 # Ask for BigQuery table
 BQ_TABLE=$(ask_required "Enter BigQuery table name: " "BigQuery table name is required.")
 log_success "BigQuery table set to: ${COLOR_BOLD}${BQ_TABLE}${COLOR_RESET}"
+echo ""
 
 # Create terraform.tfvars file
 log_info "Creating terraform.tfvars file..."
 
 cat > terraform.tfvars <<EOL
-# Google Cloud Project Configuration
+# -------------------- Project Variables --------------------
 project_id = "${PROJECT_ID}"
 terraform_sa = "${TF_SERVICE_ACCOUNT}"
 region = "${REGION}"
 environment = "${ENVIRONMENT}"
 
-# Registry settings - DO NOT CHANGE
+# -------------------- Registry Variables --------------------
 registry_project = "${REGISTRY_PROJECT_ID}"
 registry_region = "${REGISTRY_REGION}"
 repository_name = "${REGISTRY_REPOSITORY_NAME}"
 
-# Image names - DO NOT CHANGE
+# -------------------- Image Variables --------------------
 api_image_name = "${API_IMAGE_NAME}"
 ui_image_name = "${UI_IMAGE_NAME}"
 worker_image_name = "${WORKER_IMAGE_NAME}"
 
-# Domain-wide delegation
-api_user_email = "${API_USER_EMAIL}"
+# -------------------- API/Service Configuration --------------------
+workspace_admin_user_email = "${WORKSPACE_ADMIN_USER_EMAIL}"
 
-# BigQuery Configuration
+# -------------------- BigQuery Configuration --------------------
 bigquery_project_id = "${BQ_PROJECT_ID}"
 bigquery_dataset = "${BQ_DATASET}"
 bigquery_table = "${BQ_TABLE}"
 EOL
 
-log_success "terraform.tfvars file created successfully."
+# Verify the file was created
+if [[ -f "terraform.tfvars" ]]; then
+  log_success "terraform.tfvars file created."
+else
+  log_error "Failed to create terraform.tfvars file."
+  exit 1
+fi
+
+log_step "Terraform variables configuration completed successfully!"
 log_info "Configuration file location: ${COLOR_BOLD}$(pwd)/terraform.tfvars${COLOR_RESET}"
-
-# Explain what this file is for
-log_step "Configuration Summary"
-log_info "The terraform.tfvars file contains configuration values that will be used by Terraform to deploy Google Sync to Cloud."
-log_info "Deployment will create the following main resources:"
-log_info "1. Google Kubernetes Engine (GKE) cluster for the application"
-log_info "2. Cloud Storage buckets for file storage"
-log_info "3. Secret Manager entries for credentials"
-log_info "4. IAM permissions for components to communicate"
-log_info "5. Cloud Run services for the user interface"
-
-# Final message
-log_info "Please review the terraform.tfvars file before proceeding to the next step."
+log_info "You can now proceed to the next step."

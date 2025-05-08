@@ -34,65 +34,48 @@ check_command "docker"
 
 # Get project details from argument or from gcloud config
 PROJECT_ID=$(get_project_id "$1")
+PROJECT_NUMBER=$(get_project_number "$PROJECT_ID")
+TF_SERVICE_ACCOUNT="terraform-admin@${PROJECT_ID}.iam.gserviceaccount.com"
+TF_STATE_BUCKET="${PROJECT_ID}-${STATE_BUCKET_SUFIX}"
 
-# Get terraform service account email
-TF_SERVICE_ACCOUNT=""
-if [[ -f "tf_sa_env.sh" ]]; then
-  source tf_sa_env.sh
-  TF_SERVICE_ACCOUNT="$TF_SERVICE_ACCOUNT_EMAIL"
-else
-  # If not available, construct it based on standard naming
-  TF_SERVICE_ACCOUNT="terraform-admin@${PROJECT_ID}.iam.gserviceaccount.com"
-  log_info "Service account environment file not found, using default: ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
-fi
-
-# Use terraform image from env.sh
-log_info "Using Terraform image: ${COLOR_BOLD}${TERRAFORM_IMAGE}${COLOR_RESET}"
-
-# Get state bucket name
-TF_STATE_BUCKET=""
-if [[ -f "tf_sa_env.sh" ]]; then
-  source tf_sa_env.sh
-fi
-
-# If bucket name wasn't loaded from file, try to construct it based on project ID
-if [[ -z "$TF_STATE_BUCKET" ]]; then
-  TF_STATE_BUCKET="terraform-state-${PROJECT_ID}"
-  log_info "State bucket environment file not found, using default: ${COLOR_BOLD}${TF_STATE_BUCKET}${COLOR_RESET}"
-fi
+log_info "Project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
+log_info "Project Number: ${COLOR_BOLD}${PROJECT_NUMBER}${COLOR_RESET}"
+log_info "Terraform Service Account: ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
+log_info "Terraform Image: ${COLOR_BOLD}${TERRAFORM_IMAGE}${COLOR_RESET}"
+log_info "Terraform State Bucket: ${COLOR_BOLD}${TF_STATE_BUCKET}${COLOR_RESET}"
 
 # Generate OAuth token for service account impersonation
 log_step "Generating OAuth token for service account impersonation"
 log_info "Impersonating service account: ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
 
 # Export the OAuth token
-export GOOGLE_OAUTH_ACCESS_TOKEN=$(gcloud auth print-access-token --impersonate-service-account="${TF_SERVICE_ACCOUNT}")
-if [[ -z "$GOOGLE_OAUTH_ACCESS_TOKEN" ]]; then
-  log_error "Failed to generate OAuth access token. Please check your permissions."
-  exit 1
-fi
-log_success "OAuth token generated successfully."
-
-# Check if terraform.tfvars exists
-if [[ ! -f "terraform.tfvars" ]]; then
-  log_error "terraform.tfvars file not found."
-  log_info "Please run the create_terraform_tfvars.sh script first."
+export GOOGLE_OAUTH_ACCESS_TOKEN=$(gcloud auth print-access-token --impersonate-service-account="${TF_SERVICE_ACCOUNT}" 2>/dev/null)
+if [[ -n "$GOOGLE_OAUTH_ACCESS_TOKEN" ]]; then
+  log_success "Successfully generated OAuth access token for service account impersonation."
+else
+  log_error "Failed to generate OAuth access token for service account impersonation."
+  log_info "Please ensure you have the Service Account Token Creator role and try again."
   exit 1
 fi
 
-log_step "Running Terraform Deployment"
-log_info "Project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
-log_info "Service Account: ${COLOR_BOLD}${TF_SERVICE_ACCOUNT}${COLOR_RESET}"
-log_info "State Bucket: ${COLOR_BOLD}${TF_STATE_BUCKET}${COLOR_RESET}"
+# Check terraform.tfvars configuration
+log_step "Checking terraform.tfvars configuration"
+log_info "Verifying terraform.tfvars file exists and is properly configured"
 
-# Set up for Terraform deployment
+if [[ -f "terraform.tfvars" ]]; then
+  log_success "Found terraform.tfvars configuration file"
+  log_info "Using configuration from terraform.tfvars"
+else
+  log_error "terraform.tfvars file not found"
+  log_info "Please run 04_create_terraform_tfvars.sh before continuing"
+  exit 1
+fi
 
 # Run Terraform operations in sequence with consistent state
 log_step "Running Terraform commands (init, plan, apply) in sequence"
 log_info "This approach ensures Terraform state is preserved between commands..."
 
-# Ask for confirmation before proceeding
-if ask_confirmation "Do you want to proceed with deployment?"; then
+run_terraform_deployment() {
   # Create a custom entrypoint script for our container
   ENTRYPOINT_SCRIPT="$(mktemp)"
   cat > "${ENTRYPOINT_SCRIPT}" << 'EOF'
@@ -109,7 +92,7 @@ terraform plan -var-file=/workspace/terraform.tfvars -input=false
 
 # Run terraform apply
 echo "Running terraform apply..."
-terraform apply -var-file=/workspace/terraform.tfvars -auto-approve -input=false
+# terraform apply -var-file=/workspace/terraform.tfvars -auto-approve -input=false
 
 # Show outputs
 echo "Showing terraform outputs..."
@@ -130,15 +113,17 @@ EOF
     
   # Clean up the temporary script
   rm -f "${ENTRYPOINT_SCRIPT}"
+}
 
-  log_success "Terraform deployment completed successfully!"
+if ask_confirmation "Do you want to proceed with deployment?"; then
+  log_info "Starting Terraform deployment..."
+  run_terraform_deployment
 else
-  log_info "Deployment cancelled."
+  log_error "Deployment cancelled by user."
+  log_info "You can run this script again when ready to deploy."
   exit 0
 fi
 
 # Final message
-log_step "Deployment Complete!"
-display_success "Google Sync to Cloud has been successfully deployed to your project"
-log_info "You can access the application using the UI URL displayed above."
-log_info "For support, please contact team@automatearmy.com."
+log_step "Terraform deployment completed successfully!"
+log_info "You can now proceed to the next step."

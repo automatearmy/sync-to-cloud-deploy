@@ -35,7 +35,10 @@ check_command "jq"
 
 # Get project details from argument or from gcloud config
 PROJECT_ID=$(get_project_id "$1")
-log_info "Using project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
+PROJECT_NUMBER=$(get_project_number "$PROJECT_ID")
+
+log_info "Project ID: ${COLOR_BOLD}${PROJECT_ID}${COLOR_RESET}"
+log_info "Project Number: ${COLOR_BOLD}${PROJECT_NUMBER}${COLOR_RESET}"
 
 # ----- PART 1: Create Terraform Service Account -----
 log_step "Creating Terraform Service Account"
@@ -66,7 +69,8 @@ log_info "Granting 'roles/owner' to service account '$SA_EMAIL'..."
 gcloud projects add-iam-policy-binding "$PROJECT_ID" \
   --member="serviceAccount:$SA_EMAIL" \
   --role="roles/owner" \
-  --condition=None
+  --condition=None \
+  &>/dev/null
 
 log_success "Added 'roles/owner' role to service account '$SA_EMAIL'."
 
@@ -84,14 +88,11 @@ else
   gcloud projects add-iam-policy-binding "$PROJECT_ID" \
     --member="user:$USER_EMAIL" \
     --role="roles/iam.serviceAccountTokenCreator" \
-    --condition=None
+    --condition=None \
+    &>/dev/null
   
   log_success "Granted 'roles/iam.serviceAccountTokenCreator' role to user '$USER_EMAIL'."
 fi
-
-# Save service account email to a file for later use
-echo "export TF_SERVICE_ACCOUNT_EMAIL=${SA_EMAIL}" > tf_sa_env.sh
-log_info "Service account email saved to tf_sa_env.sh for later use."
 
 # ----- PART 2: Create Terraform State Bucket -----
 log_step "Creating GCS bucket for Terraform state"
@@ -100,7 +101,7 @@ log_step "Creating GCS bucket for Terraform state"
 GCS_LOCATION="US"
 
 # Generate bucket name
-BUCKET_NAME="terraform-state-${PROJECT_ID}"
+BUCKET_NAME="${PROJECT_ID}-${STATE_BUCKET_SUFIX}"
 
 log_info "Bucket Name: ${COLOR_BOLD}${BUCKET_NAME}${COLOR_RESET}"
 log_info "Location: ${COLOR_BOLD}${GCS_LOCATION}${COLOR_RESET}"
@@ -122,22 +123,17 @@ else
   log_info "Creating new GCS bucket 'gs://${BUCKET_NAME}'..."
   
   # Create the bucket
-  gsutil mb -p "${PROJECT_ID}" -l "${GCS_LOCATION}" "gs://${BUCKET_NAME}"
+  gsutil mb -p "${PROJECT_ID}" -l "${GCS_LOCATION}" "gs://${BUCKET_NAME}" &>/dev/null
   log_success "Bucket 'gs://${BUCKET_NAME}' created successfully."
   
   # Enable versioning
   log_info "Enabling versioning on the bucket..."
-  gsutil versioning set on "gs://${BUCKET_NAME}"
+  gsutil versioning set on "gs://${BUCKET_NAME}" &>/dev/null
   log_success "Versioning enabled on the bucket."
 fi
 
-# Save bucket name to a file for later use
-echo "export TF_STATE_BUCKET=${BUCKET_NAME}" >> tf_sa_env.sh
-log_info "Bucket name appended to tf_sa_env.sh for later use."
-
 # Final message
-log_step "Terraform Infrastructure Setup Completed!"
-display_success "Terraform service account and state bucket are ready"
+log_step "Terraform infrastructure completed successfully!"
 log_info "Service Account: ${COLOR_BOLD}${SA_EMAIL}${COLOR_RESET}"
 log_info "State Bucket: ${COLOR_BOLD}gs://${BUCKET_NAME}${COLOR_RESET}"
-log_info "You can now proceed to the next step of the deployment process."
+log_info "You can now proceed to the next step."

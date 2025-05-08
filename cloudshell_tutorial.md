@@ -101,7 +101,7 @@ Each script is designed to be idempotent, meaning it's safe to run multiple time
 Now, let's make sure you have the necessary permissions on this project and enable required APIs:
 
 ```sh
-./steps/check_project_setup.sh
+./steps/01_check_project_setup.sh
 ```
 
 This script will:
@@ -191,7 +191,7 @@ Make sure to keep the client secret secure and never commit it to version contro
 Now, run the script to securely store your OAuth credentials in Secret Manager:
 
 ```sh
-./steps/create_oauth_credentials.sh <walkthrough-project-id/>
+./steps/02_create_oauth_credentials.sh <walkthrough-project-id/>
 ```
 
 The script will:
@@ -212,7 +212,7 @@ The OAuth clients you created will allow Google Sync to Cloud to securely authen
 Now, let's set up the Terraform infrastructure needed for deployment. This includes creating a service account with the necessary permissions and a Cloud Storage bucket to store Terraform's state files.
 
 ```sh
-./steps/setup_terraform_infra.sh <walkthrough-project-id/>
+./steps/03_setup_terraform_infra.sh <walkthrough-project-id/>
 ```
 
 This script will:
@@ -235,7 +235,7 @@ The Terraform service account has elevated permissions to create all required re
 Now, let's create the Terraform configuration file that will be used for deployment:
 
 ```sh
-./steps/create_terraform_tfvars.sh <walkthrough-project-id/>
+./steps/04_create_terraform_tfvars.sh <walkthrough-project-id/>
 ```
 
 This script will create a `terraform.tfvars` file with your project settings
@@ -272,7 +272,7 @@ Once you receive confirmation of access, you can proceed to the final step.
 Once you've received confirmation of artifact registry access, you need to pull the Terraform Docker image:
 
 ```sh
-./steps/pull_terraform_image.sh <walkthrough-project-id/>
+./steps/05_pull_terraform_image.sh <walkthrough-project-id/>
 ```
 
 This script will:
@@ -293,7 +293,7 @@ The Terraform image contains all the infrastructure-as-code that will deploy Goo
 Now that you have the Terraform image, you can run the deployment:
 
 ```sh
-./steps/run_terraform.sh <walkthrough-project-id/>
+./steps/06_run_terraform.sh <walkthrough-project-id/>
 ```
 
 This script will:

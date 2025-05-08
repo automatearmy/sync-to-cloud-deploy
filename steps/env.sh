@@ -34,7 +34,7 @@ export WORKER_IMAGE_NAME="sync-to-cloud-worker"
 
 # Service account and bucket naming
 export SA_NAME="terraform-admin"
-export STATE_BUCKET_PREFIX="terraform-state-"
+export STATE_BUCKET_SUFIX="terraform-state"
 
 # Secrets
 export API_CLIENT_ID_SECRET="sync-to-cloud-api-client-id"

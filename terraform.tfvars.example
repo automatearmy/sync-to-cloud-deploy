@@ -1,39 +1,23 @@
-# Copyright 2025 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# This file serves as an example for terraform variables configuration
-
-# Google Cloud Project Configuration
+# -------------------- Project Variables --------------------
 project_id = "your-project-id"
 terraform_sa = "terraform-admin@your-project-id.iam.gserviceaccount.com"
 region = "us-central1"
 environment = "production"
 
-# Registry settings - DO NOT CHANGE
+# -------------------- Registry Variables --------------------
 registry_project = "sync-to-cloud-registry"
 registry_region = "us-central1"
 repository_name = "sync-to-cloud-app"
 
-# Image names - DO NOT CHANGE
+# -------------------- Image Variables --------------------
 api_image_name = "sync-to-cloud-api"
 ui_image_name = "sync-to-cloud-ui"
 worker_image_name = "sync-to-cloud-worker"
 
-# Domain-wide delegation
-api_user_email = "drive-transfer-service@yourdomain.com"
+# -------------------- API/Service Configuration --------------------
+workspace_admin_user_email = "admin@yourdomain.com"
 
-# BigQuery Configuration
+# -------------------- BigQuery Configuration --------------------
 bigquery_project_id = "your-project-id"
 bigquery_dataset = "drive_inventory_report"
 bigquery_table = "inventory"
