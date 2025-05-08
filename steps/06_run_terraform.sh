@@ -92,7 +92,7 @@ terraform plan -var-file=/workspace/terraform.tfvars -input=false
 
 # Run terraform apply
 echo "Running terraform apply..."
-# terraform apply -var-file=/workspace/terraform.tfvars -auto-approve -input=false
+terraform apply -var-file=/workspace/terraform.tfvars -auto-approve -input=false
 
 # Show outputs
 echo "Showing terraform outputs..."
