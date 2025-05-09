@@ -376,6 +376,7 @@ The "Manage Labels" permission allows the user to create, edit, and manage label
 Now, you need to grant domain-wide delegation to the service accounts created by Terraform:
 
 1. First, locate the service account information:
+
    - Go to [Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts?project=<walkthrough-project-id/>) in the Google Cloud Console
    - Find and click on the service account named `sa-sync-to-cloud-rclone@<walkthrough-project-id/>.iam.gserviceaccount.com`
    - Note or copy the Client ID (a numeric value) for this service account
@@ -384,19 +385,12 @@ Now, you need to grant domain-wide delegation to the service accounts created by
    - Navigate to the Google Admin Console's [Domain-wide Delegation page](https://admin.google.com/ac/owl/domainwidedelegation)
    - Click "Add new"
    - Enter the service account details:
-     * Client ID: Paste the numeric Client ID you copied from the service account
-     * OAuth Scopes: `https://www.googleapis.com/auth/drive`
+     - Client ID: Paste the numeric Client ID you copied from the service account
+     - OAuth Scopes: `https://www.googleapis.com/auth/drive`
    - Click "Authorize"
 
 <walkthrough-footnote>
-The Drive scope (`https://www.googleapis.com/auth/drive`) grants the Rclone Service Account full access to:
-- View, edit, create and delete files and folders in Google Drive
-- Access and modify file/folder permissions and sharing settings
-- Upload new files and read/modify existing files
-- Move and organize files between folders
-- Delete files when performing move operations
-
-This full scope is necessary as Rclone needs complete access to manage files during transfers, including the ability to delete source files when performing move operations rather than copy operations.
+The Drive scope (`https://www.googleapis.com/auth/drive`) grants the Rclone Service Account full access to manage files in Google Drive, including creating, editing, moving, and deleting files and folders. This broad access is needed so Rclone can fully handle file transfers and move operations.
 </walkthrough-footnote>
 
 <!-- #################### STEP 18 #################### -->
@@ -415,18 +409,12 @@ Next, configure domain-wide delegation for the Worker Service Account:
    - Return to the [Domain-wide Delegation page](https://admin.google.com/ac/owl/domainwidedelegation)
    - Click "Add new"
    - Enter the service account details:
-     * Client ID: Paste the numeric Client ID you copied from the worker service account
-     * OAuth Scopes: `https://www.googleapis.com/auth/drive`
+     - Client ID: Paste the numeric Client ID you copied from the worker service account
+     - OAuth Scopes: `https://www.googleapis.com/auth/drive`
    - Click "Authorize"
 
 <walkthrough-footnote>
-The Worker Service Account needs the Drive scope (`https://www.googleapis.com/auth/drive`) to:
-- Access and read files in Google Drive to handle transfer processing
-- Update file metadata and statuses during and after transfers
-- Apply and read labels to track transfer status
-- Queue and manage transfer operations
-- Monitor transfer progress and handle notifications
-- Coordinate with the Rclone service for efficient file transfers
+The Worker Service Account needs the Drive scope (`https://www.googleapis.com/auth/drive`) to access and manage files in Google Drive, including reading files, updating metadata and labels, managing transfers, and coordinating with the Rclone service for efficient file processing.
 </walkthrough-footnote>
 
 <!-- #################### STEP 19 #################### -->
@@ -445,15 +433,33 @@ Finally, configure domain-wide delegation for the API Service Account:
    - Return to the [Domain-wide Delegation page](https://admin.google.com/ac/owl/domainwidedelegation)
    - Click "Add new"
    - Enter the service account details:
-     * Client ID: Paste the numeric Client ID you copied from the API service account
-     * OAuth Scopes: `https://www.googleapis.com/auth/drive.admin.labels.readonly`
+     - Client ID: Paste the numeric Client ID you copied from the API service account
+     - OAuth Scopes: `https://www.googleapis.com/auth/drive.admin.labels.readonly`
    - Click "Authorize"
 
 <walkthrough-footnote>
-The API Service Account needs the Drive Labels readonly scope (`https://www.googleapis.com/auth/drive.admin.labels.readonly`) to:
-- View all Drive labels and label-related administration policies in your organization
-- Read label properties and assignments
-- Identify files with specific labels for transfer operations
+The API Service Account needs the Drive Labels readonly scope (`https://www.googleapis.com/auth/drive.admin.labels.readonly`) to view and read Drive labels and their assignments across your organization, which enables identifying files for transfer based on their labels.
+</walkthrough-footnote>
+
+<!-- #################### STEP 20 #################### -->
+<!-- #################### STEP 20 #################### -->
+
+## Grant BigQuery Permissions for Drive Inventory Report
+
+The Sync to Cloud application uses BigQuery Drive Inventory Report to identify and process files. You must grant specific permissions to the Worker Service Account in the Google Cloud project where your BigQuery Drive inventory dataset is located.
+
+1.  **Identify the Project ID**: Determine the Google Cloud Project ID that hosts your BigQuery Drive Inventory Report dataset.
+2.  **Navigate to IAM**: Go to the IAM & Admin page of the project containing the BigQuery dataset.
+3.  **Grant Access**:
+   - Click on "**GRANT ACCESS**".
+   - In the "**New principals**" field, add the Worker Service Account: `sa-sync-to-cloud-worker@<walkthrough-project-id/>.iam.gserviceaccount.com`
+   - Assign the role "**BigQuery Job User**" (`roles/bigquery.jobUser`). This role must be granted at the **project level**.
+   - Click "**ADD ANOTHER ROLE**".
+   - Assign the role "**BigQuery Data Viewer**" (`roles/bigquery.dataViewer`). This role can be granted at the **project level** or, for more fine-grained control, directly on the **dataset** containing your Drive inventory report.
+   - Click "**SAVE**".
+
+<walkthrough-footnote>
+These permissions allow the Worker Service Account to query and read data from your Drive inventory report in BigQuery.
 </walkthrough-footnote>
 
 <!-- #################### FINAL STEP #################### -->
