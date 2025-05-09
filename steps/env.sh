@@ -41,6 +41,7 @@ export API_CLIENT_ID_SECRET="sync-to-cloud-api-client-id"
 export API_CLIENT_SECRET_SECRET="sync-to-cloud-api-client-secret"
 export UI_CLIENT_ID_SECRET="sync-to-cloud-ui-client-id"
 export UI_CLIENT_SECRET_SECRET="sync-to-cloud-ui-client-secret"
+export TF_VARS_SECRET_NAME="sync-to-cloud-terraform-tfvars"
 
 # Default region
 export DEFAULT_REGION="us-central1"

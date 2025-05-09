@@ -252,21 +252,23 @@ The Terraform service account has elevated permissions to create all required re
 <!-- #################### STEP 11 #################### -->
 <!-- #################### STEP 11 #################### -->
 
-## Create Terraform Configuration File
+## Create Terraform Configuration File and Secret
 
-Now, let's create the Terraform configuration file that will be used for deployment:
+Now, let's create the Terraform configuration file (`terraform.tfvars`) and also store these variables securely in Google Cloud Secret Manager.
 
+Run the following script:
 ```sh
 ./steps/04_create_terraform_tfvars.sh <walkthrough-project-id/>
 ```
 
-This script will create a `terraform.tfvars` file with your project settings:
+This script will:
 
-1. When prompted, enter the Google Workspace admin user email you identified in Step 5
-2. This email will be configured for listing and managing labels across the organization
+1.  Prompt you for necessary configuration values, including the Google Workspace admin user email you identified in Step 5.
+2.  Create a `terraform.tfvars` file locally in your Cloud Shell environment.
+3.  Create (or update if it already exists) a secret named `sync-to-cloud-terraform-tfvars` in Secret Manager and store the `terraform.tfvars` content in it.
 
 <walkthrough-footnote>
-This is where you'll provide the email address of the admin user you identified earlier. This user will only have access to read and manage labels, not to access Google Drive files directly. The label access is essential for the Sync to Cloud application to list all labels, which will be available to select in the UI.
+The script automates the creation of both the local `terraform.tfvars` file needed for the immediate deployment and a secure copy in Secret Manager. This ensures your configuration is safely stored and versioned.
 </walkthrough-footnote>
 
 <!-- #################### STEP 12 #################### -->

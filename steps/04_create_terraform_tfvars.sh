@@ -110,12 +110,25 @@ EOL
 
 # Verify the file was created
 if [[ -f "terraform.tfvars" ]]; then
-  log_success "terraform.tfvars file created."
+  log_success "terraform.tfvars file created locally."
 else
-  log_error "Failed to create terraform.tfvars file."
+  log_error "Failed to create terraform.tfvars file locally."
   exit 1
 fi
 
+# Create or update the secret in Secret Manager
+log_step "Storing terraform.tfvars in Secret Manager"
+if gcloud secrets describe "${TF_VARS_SECRET_NAME}" --project="${PROJECT_ID}" &>/dev/null; then
+  log_info "Secret ${TF_VARS_SECRET_NAME} already exists. Adding a new version..."
+  gcloud secrets versions add "${TF_VARS_SECRET_NAME}" --data-file="terraform.tfvars" --project="${PROJECT_ID}"
+  log_success "New version added to secret ${TF_VARS_SECRET_NAME}."
+else
+  log_info "Secret ${TF_VARS_SECRET_NAME} does not exist. Creating new secret..."
+  gcloud secrets create "${TF_VARS_SECRET_NAME}" --replication-policy="automatic" --data-file="terraform.tfvars" --project="${PROJECT_ID}"
+  log_success "Secret ${TF_VARS_SECRET_NAME} created and initial version added."
+fi
+
 log_step "Terraform variables configuration completed successfully!"
-log_info "Configuration file location: ${COLOR_BOLD}$(pwd)/terraform.tfvars${COLOR_RESET}"
+log_info "Local configuration file: ${COLOR_BOLD}$(pwd)/terraform.tfvars${COLOR_RESET}"
+log_info "Configuration also stored in Secret Manager: ${COLOR_BOLD}${TF_VARS_SECRET_NAME}${COLOR_RESET}"
 log_info "You can now proceed to the next step."
