@@ -424,7 +424,7 @@ The Worker Service Account needs the Drive scope (`https://www.googleapis.com/au
 
 ## Grant Domain-wide Delegation for API Service Account
 
-Finally, configure domain-wide delegation for the API Service Account:
+Configure domain-wide delegation for the API Service Account:
 
 1. First, locate the service account information:
    - Return to [Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts?project=<walkthrough-project-id/>) in the Google Cloud Console
@@ -445,6 +445,26 @@ The API Service Account needs the Drive Labels readonly scope (`https://www.goog
 
 <!-- #################### STEP 20 #################### -->
 <!-- #################### STEP 20 #################### -->
+
+## Assign Storage Admin Role to Worker Service Account
+
+You need to assign the Storage Admin role to the worker service account:
+
+1. Navigate to the [Google Workspace Admin Roles page](https://admin.google.com/ac/roles)
+2. Click on "Storage Admin"
+3. Click on "Admins"
+4. Click on "Assign service accounts"
+5. Add the worker service account:
+   ```
+   sa-sync-to-cloud-worker@<walkthrough-project-id/>.iam.gserviceaccount.com
+   ```
+
+<walkthrough-footnote>
+This service account permission will be used to access shared drives and give the "organizer" role to the rclone service account when transferring files, ensuring the service account has proper access to the shared drive to move files.
+</walkthrough-footnote>
+
+<!-- #################### STEP 21 #################### -->
+<!-- #################### STEP 21 #################### -->
 
 ## Grant BigQuery Permissions for Drive Inventory Report
 
