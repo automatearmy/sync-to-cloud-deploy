@@ -342,21 +342,6 @@ The deployment process will create all necessary GCP resources, including GKE cl
 
 After deploying the infrastructure, you need to configure the Google Workspace admin user you identified in Step 5 with the necessary permissions:
 
-1. This should be the same user you specified during the Terraform configuration 
-- Remember that this user must have a valid email under your organization's domain (e.g., admin@domain.edu) 
-- This user will be responsible for managing labels in Google Drive
-
-<walkthrough-footnote>
-This is the same user account you identified in Step 5 and provided during the Terraform configuration. Now you'll grant it the specific permissions needed for label management operations required by the Sync to Cloud application.
-</walkthrough-footnote>
-
-<!-- #################### STEP 16 #################### -->
-<!-- #################### STEP 16 #################### -->
-
-## Configure Admin User Permissions
-
-After deploying the infrastructure, you need to configure the Google Workspace admin user you identified in Step 5 with the necessary permissions:
-
 1. This should be the same user you specified during the Terraform configuration
    - Remember that this user must have a valid email under your organization's domain (e.g., admin@domain.edu)
    - This user will be responsible for managing labels in Google Drive
@@ -365,8 +350,8 @@ After deploying the infrastructure, you need to configure the Google Workspace a
 This is the same user account you identified in Step 5 and provided during the Terraform configuration. Now you'll grant it the specific permissions needed for label management operations required by the Sync to Cloud application.
 </walkthrough-footnote>
 
-<!-- #################### STEP 17 #################### -->
-<!-- #################### STEP 17 #################### -->
+<!-- #################### STEP 16 #################### -->
+<!-- #################### STEP 16 #################### -->
 
 ## Create and Assign Label Management Role
 
@@ -385,8 +370,8 @@ The selected user needs specific permissions for managing labels:
 The "Manage Labels" permission allows the user to create, edit, and manage labels for data classification in Google Drive, which is essential for the Sync to Cloud service to identify and process files correctly.
 </walkthrough-footnote>
 
-<!-- #################### STEP 18 #################### -->
-<!-- #################### STEP 18 #################### -->
+<!-- #################### STEP 17 #################### -->
+<!-- #################### STEP 17 #################### -->
 
 ## Grant Domain-wide Delegation for Rclone Service Account
 
@@ -410,8 +395,8 @@ Now, you need to grant domain-wide delegation to the service accounts created by
 The Drive scope (`https://www.googleapis.com/auth/drive`) grants the Rclone Service Account full access to manage files in Google Drive, including creating, editing, moving, and deleting files and folders. This broad access is needed so Rclone can fully handle file transfers and move operations.
 </walkthrough-footnote>
 
-<!-- #################### STEP 19 #################### -->
-<!-- #################### STEP 19 #################### -->
+<!-- #################### STEP 18 #################### -->
+<!-- #################### STEP 18 #################### -->
 
 ## Grant Domain-wide Delegation for Worker Service Account
 
@@ -434,8 +419,8 @@ Next, configure domain-wide delegation for the Worker Service Account:
 The Worker Service Account needs the Drive scope (`https://www.googleapis.com/auth/drive`) to access and manage files in Google Drive, including reading files, updating metadata and labels, managing transfers, and coordinating with the Rclone service for efficient file processing.
 </walkthrough-footnote>
 
-<!-- #################### STEP 20 #################### -->
-<!-- #################### STEP 20 #################### -->
+<!-- #################### STEP 19 #################### -->
+<!-- #################### STEP 19 #################### -->
 
 ## Grant Domain-wide Delegation for API Service Account
 
@@ -458,45 +443,48 @@ Configure domain-wide delegation for the API Service Account:
 The API Service Account needs the Drive Labels readonly scope (`https://www.googleapis.com/auth/drive.admin.labels.readonly`) to view and read Drive labels and their assignments across your organization, which enables identifying files for transfer based on their labels.
 </walkthrough-footnote>
 
+<!-- #################### STEP 20 #################### -->
+<!-- #################### STEP 20 #################### -->
+
+## Assign Storage Admin Role to Worker Service Account
+
+You need to assign the Storage Admin role to the worker service account:
+
+1. Navigate to the [Google Workspace Admin Roles page](https://admin.google.com/ac/roles)
+2. Click on "Storage Admin"
+3. Click on "Admins"
+4. Click on "Assign service accounts"
+5. Add the worker service account:
+   ```
+   sa-sync-to-cloud-worker@<walkthrough-project-id/>.iam.gserviceaccount.com
+   ```
+
+<walkthrough-footnote>
+This service account permission will be used to access shared drives and give the "organizer" role to the rclone service account when transferring files, ensuring the service account has proper access to the shared drive to move files.
+</walkthrough-footnote>
+
 <!-- #################### STEP 21 #################### -->
 <!-- #################### STEP 21 #################### -->
 
 ## Grant BigQuery Permissions for Drive Inventory Report
 
-The Sync to Cloud application uses BigQuery Drive Inventory Report to identify and process files. You must grant specific permissions to both the Worker and API Service Accounts in the Google Cloud project where your BigQuery Drive inventory dataset is located.
+The Sync to Cloud application uses BigQuery Drive Inventory Report to identify and process files. You must grant specific permissions to the Worker Service Account in the Google Cloud project where your BigQuery Drive inventory dataset is located.
 
-### Option 1: Use the Helper Script (Recommended)
-
-Run the helper script to get the exact commands you need:
-
-```sh
-./steps/07_grant_bigquery_permissions.sh <walkthrough-project-id/>
-```
-
-This script will:
-1. Read your BigQuery configuration from the terraform.tfvars file
-2. Generate the exact `gcloud` and `bq` commands you need to run
-3. Provide options for both project-level and dataset-level permissions
-4. Display the service account emails with your specific project ID
-
-### Option 2: Manual Configuration via Console
-
-1. **Identify the Project ID**: Determine the Google Cloud Project ID that hosts your BigQuery Drive Inventory Report dataset.
-2. **Navigate to IAM**: Go to the [IAM & Admin page](https://console.cloud.google.com/iam-admin/iam) of the project containing the BigQuery dataset.
-3. **Grant Access**: 
-- Click on "**GRANT ACCESS**". 
-- In the "**New principals**" field, add both service accounts: 
-- `sa-sync-to-cloud-worker@<walkthrough-project-id/>.iam.gserviceaccount.com` 
-- `sa-sync-to-cloud-api@<walkthrough-project-id/>.iam.gserviceaccount.com` 
-- Assign the role "**BigQuery Job User**" (`roles/bigquery.jobUser`). This role must be granted at the **project level**. 
-- Click "**ADD ANOTHER ROLE**". 
-- Assign the role "**BigQuery Data Viewer**" (`roles/bigquery.dataViewer`). This role can be granted at the **project level** or, for more fine-grained control, directly on the **dataset** containing your Drive inventory report. 
-- Click "**SAVE**".
+1.  **Identify the Project ID**: Determine the Google Cloud Project ID that hosts your BigQuery Drive Inventory Report dataset.
+2.  **Navigate to IAM**: Go to the IAM & Admin page of the project containing the BigQuery dataset.
+3.  **Grant Access**:
+   - Click on "**GRANT ACCESS**".
+   - In the "**New principals**" field, add the Worker Service Account: `sa-sync-to-cloud-worker@<walkthrough-project-id/>.iam.gserviceaccount.com`
+   - Assign the role "**BigQuery Job User**" (`roles/bigquery.jobUser`). This role must be granted at the **project level**.
+   - Click "**ADD ANOTHER ROLE**".
+   - Assign the role "**BigQuery Data Viewer**" (`roles/bigquery.dataViewer`). This role can be granted at the **project level** or, for more fine-grained control, directly on the **dataset** containing your Drive inventory report.
+   - Click "**SAVE**".
 
 <walkthrough-footnote>
-These permissions allow both the Worker and API Service Accounts to query and read data from your Drive inventory report in BigQuery. The helper script provides the most accurate commands based on your specific configuration.
+These permissions allow the Worker Service Account to query and read data from your Drive inventory report in BigQuery.
 </walkthrough-footnote>
 
+<!-- #################### FINAL STEP #################### -->
 <!-- #################### FINAL STEP #################### -->
 
 ## Congratulations!
