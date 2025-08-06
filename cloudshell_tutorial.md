@@ -468,13 +468,14 @@ This service account permission will be used to access shared drives and give th
 
 ## Grant BigQuery Permissions for Drive Inventory Report
 
-The Sync to Cloud application uses BigQuery Drive Inventory Report to identify and process files. You must grant specific permissions to the Worker Service Account in the Google Cloud project where your BigQuery Drive inventory dataset is located.
+The Sync to Cloud application uses BigQuery Drive Inventory Report to identify and process files. You must grant specific permissions to the Worker and API Service Accounts in the Google Cloud project where your BigQuery Drive inventory dataset is located.
 
 1.  **Identify the Project ID**: Determine the Google Cloud Project ID that hosts your BigQuery Drive Inventory Report dataset.
 2.  **Navigate to IAM**: Go to the IAM & Admin page of the project containing the BigQuery dataset.
 3.  **Grant Access**:
    - Click on "**GRANT ACCESS**".
    - In the "**New principals**" field, add the Worker Service Account: `sa-sync-to-cloud-worker@<walkthrough-project-id/>.iam.gserviceaccount.com`
+   - In the "**New principals**" field, add the API Service Account: `sa-sync-to-cloud-api@<walkthrough-project-id/>.iam.gserviceaccount.com`
    - Assign the role "**BigQuery Job User**" (`roles/bigquery.jobUser`). This role must be granted at the **project level**.
    - Click "**ADD ANOTHER ROLE**".
    - Assign the role "**BigQuery Data Viewer**" (`roles/bigquery.dataViewer`). This role can be granted at the **project level** or, for more fine-grained control, directly on the **dataset** containing your Drive inventory report.
