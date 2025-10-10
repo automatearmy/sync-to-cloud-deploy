@@ -123,21 +123,18 @@ fi
 log_step "Granting IAM Permissions"
 
 log_info "Granting Cloud Run Invoker role..."
-gcloud run services add-iam-policy-binding "sync-to-cloud-ui" \
-  --region="us-central1" \
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
   --member="user:${USER_EMAIL}" \
   --role="roles/run.invoker" \
-  --project="${PROJECT_ID}"
+  --quiet > /dev/null 2>&1
 
 log_success "Cloud Run Invoker role granted."
 
 log_info "Granting IAP-secured Web App User role..."
-gcloud iap web add-iam-policy-binding \
-  --resource-type=backend-services \
-  --service="sync-to-cloud-ui" \
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
   --member="user:${USER_EMAIL}" \
   --role="roles/iap.httpsResourceAccessor" \
-  --project="${PROJECT_ID}"
+  --quiet > /dev/null 2>&1
 
 log_success "IAP-secured Web App User role granted."
 
