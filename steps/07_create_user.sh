@@ -79,9 +79,6 @@ FIRESTORE_DOC='{
     "picture": {
       "nullValue": null
     },
-    "role_id": {
-      "nullValue": null
-    },
     "status": {
       "stringValue": "pending"
     },
