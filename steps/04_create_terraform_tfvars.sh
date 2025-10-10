@@ -45,13 +45,8 @@ log_info "Specify the Google Cloud region to deploy the resources."
 REGION=$(ask_with_default "Enter region" "us-central1" "Common regions: us-central1, us-east1, us-west1, europe-west1, asia-east1")
 log_success "Region set to: ${COLOR_BOLD}${REGION}${COLOR_RESET}"
 
-# Ask for workspace admin user
-log_step "Workspace Admin User Configuration"
-log_info "Google Sync to Cloud requires a Google Workspace admin user account."
-log_info "This should be a regular user email (like user@domain.edu) with admin privileges in your Google Workspace."
-log_info "The API will use this account to access and list labels across your entire organization."
-WORKSPACE_ADMIN_USER_EMAIL=$(ask_required "Enter user account email for listing labels: " "E-mail is required.")
-log_success "Workspace Admin User set to: ${COLOR_BOLD}${API_USER_EMAIL}${COLOR_RESET}"
+# Set default workspace admin user (no longer used in current version)
+WORKSPACE_ADMIN_USER_EMAIL="-"
 
 # Ask for environment name
 log_step "Environment Configuration"

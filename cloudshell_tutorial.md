@@ -116,27 +116,6 @@ If the script indicates any missing permissions or requirements, please address 
 You must have BOTH the Owner role AND Service Account Token Creator role on the project. While the Owner role gives you access to most GCP resources, the Service Account Token Creator role is a separate permission that may still fail even with Owner access.
 </walkthrough-footnote>
 
-<!-- #################### STEP 5 #################### -->
-<!-- #################### STEP 5 #################### -->
-
-## Identify Google Workspace Admin User
-
-Before proceeding with the OAuth configuration, you need to identify a Google Workspace user with administrative privileges:
-
-1. Create a new user or select an existing administrator in your Google Workspace organization
-   - This user MUST have a valid email under your organization's domain (e.g., admin@domain.edu)
-   - The user must have an active Google Workspace license
-
-2. This user will be used exclusively for:
-   - Listing and managing labels across the entire organization
-   - This user does NOT need access to Google Drive files directly
-
-3. Make note of this user's email address, as you will need to provide it during the Terraform configuration step
-
-<walkthrough-footnote>
-The user account specified here is critical for the application's functionality. It needs appropriate permissions to list and manage labels organization-wide. The Terraform deployment will configure the application to use this user's credentials for label management operations only.
-</walkthrough-footnote>
-
 <!-- #################### STEP 6 #################### -->
 <!-- #################### STEP 6 #################### -->
 
@@ -263,7 +242,7 @@ Run the following script:
 
 This script will:
 
-1.  Prompt you for necessary configuration values, including the Google Workspace admin user email you identified in Step 5.
+1.  Prompt you for necessary configuration values such as region, environment name, and BigQuery connection details.
 2.  Create a `terraform.tfvars` file locally in your Cloud Shell environment.
 3.  Create (or update if it already exists) a secret named `sync-to-cloud-terraform-tfvars` in Secret Manager and store the `terraform.tfvars` content in it.
 
@@ -338,40 +317,27 @@ The deployment process will create all necessary GCP resources, including GKE cl
 <!-- #################### STEP 15 #################### -->
 <!-- #################### STEP 15 #################### -->
 
-## Configure Admin User Permissions
+## Create Initial User
 
-After deploying the infrastructure, you need to configure the Google Workspace admin user you identified in Step 5 with the necessary permissions:
+Now that the infrastructure is deployed, let's create the initial user who will have access to the application:
 
-1. This should be the same user you specified during the Terraform configuration
-   - Remember that this user must have a valid email under your organization's domain (e.g., admin@domain.edu)
-   - This user will be responsible for managing labels in Google Drive
+```sh
+./steps/07_create_user.sh <walkthrough-project-id/>
+```
+
+This script will:
+
+1. Prompt you for the user's email and name
+2. Create a user document in the database
+3. Grant the user Cloud Run Invoker permissions
+4. Grant the user IAP-secured Web App User permissions
 
 <walkthrough-footnote>
-This is the same user account you identified in Step 5 and provided during the Terraform configuration. Now you'll grant it the specific permissions needed for label management operations required by the Sync to Cloud application.
+This user will have access to the Sync to Cloud application and will be able to sign in and use all features. You can create additional users later by running this script again with different email addresses.
 </walkthrough-footnote>
 
 <!-- #################### STEP 16 #################### -->
 <!-- #################### STEP 16 #################### -->
-
-## Create and Assign Label Management Role
-
-The selected user needs specific permissions for managing labels:
-
-1. Navigate to [Admin Console](https://admin.google.com/ac/roles) > Account > Admin roles in the left toolbar
-2. Click "Create new role"
-3. Name it "Manage Organization Labels"
-4. In the "Admin Console Privileges" table, search for "Manage Labels"
-5. Assign the permission under Admin console privileges > Services > Data Classification > Manage Labels
-6. Click Continue, then Create Role
-7. Click on the new role, then Assign Members
-8. Assign it to the user you selected in the previous step
-
-<walkthrough-footnote>
-The "Manage Labels" permission allows the user to create, edit, and manage labels for data classification in Google Drive, which is essential for the Sync to Cloud service to identify and process files correctly.
-</walkthrough-footnote>
-
-<!-- #################### STEP 17 #################### -->
-<!-- #################### STEP 17 #################### -->
 
 ## Grant Domain-wide Delegation for Rclone Service Account
 
@@ -436,11 +402,15 @@ Configure domain-wide delegation for the API Service Account:
    - Click "Add new"
    - Enter the service account details:
      - Client ID: Paste the numeric Client ID you copied from the API service account
-     - OAuth Scopes: `https://www.googleapis.com/auth/drive.admin.labels.readonly`
+     - OAuth Scopes:
+       - `https://www.googleapis.com/auth/drive.labels.readonly`
+       - `https://www.googleapis.com/auth/cloud-platform`
    - Click "Authorize"
 
 <walkthrough-footnote>
-The API Service Account needs the Drive Labels readonly scope (`https://www.googleapis.com/auth/drive.admin.labels.readonly`) to view and read Drive labels and their assignments across your organization, which enables identifying files for transfer based on their labels.
+The API Service Account uses these scopes to enable user impersonation for enhanced security:
+- `drive.labels.readonly`: Allows users to see only the labels they are permitted to apply
+- `cloud-platform`: Allows users to see only the Cloud Storage buckets they have write access to
 </walkthrough-footnote>
 
 <!-- #################### STEP 20 #################### -->
